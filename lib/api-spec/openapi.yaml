@@ -1,22 +1,30 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FitPulse Fitness Tracker API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: workouts
+    description: Workout management
+  - name: exercises
+    description: Exercise library
+  - name: progress
+    description: Progress tracking
+  - name: users
+    description: User profile management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +32,434 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        "200":
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /users/profile:
+    get:
+      operationId: getUserProfile
+      tags: [users]
+      summary: Get user profile
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    put:
+      operationId: updateUserProfile
+      tags: [users]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /users/stats:
+    get:
+      operationId: getUserStats
+      tags: [users]
+      summary: Get user fitness stats
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+
+  /workouts:
+    get:
+      operationId: getWorkouts
+      tags: [workouts]
+      summary: Get user workouts
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of workouts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workout"
+    post:
+      operationId: createWorkout
+      tags: [workouts]
+      summary: Create a workout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkoutRequest"
+      responses:
+        "201":
+          description: Workout created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+
+  /workouts/{id}:
+    get:
+      operationId: getWorkout
+      tags: [workouts]
+      summary: Get a single workout
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workout details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+    put:
+      operationId: updateWorkout
+      tags: [workouts]
+      summary: Update a workout
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkoutRequest"
+      responses:
+        "200":
+          description: Workout updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+    delete:
+      operationId: deleteWorkout
+      tags: [workouts]
+      summary: Delete a workout
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workout deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /workout-plans:
+    get:
+      operationId: getWorkoutPlans
+      tags: [workouts]
+      summary: Get workout plans
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of workout plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkoutPlan"
+
+  /exercises:
+    get:
+      operationId: getExercises
+      tags: [exercises]
+      summary: Get exercise library
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+
+  /progress:
+    get:
+      operationId: getProgress
+      tags: [progress]
+      summary: Get user progress data
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Progress data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProgressEntry"
+    post:
+      operationId: logProgress
+      tags: [progress]
+      summary: Log progress entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogProgressRequest"
+      responses:
+        "201":
+          description: Progress logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressEntry"
+
+  /progress/summary:
+    get:
+      operationId: getProgressSummary
+      tags: [progress]
+      summary: Get progress summary
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Progress summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressSummary"
+
+  /goals:
+    get:
+      operationId: getGoals
+      tags: [users]
+      summary: Get user goals
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      operationId: createGoal
+      tags: [users]
+      summary: Create a goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoalRequest"
+      responses:
+        "201":
+          description: Goal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  /goals/{id}:
+    put:
+      operationId: updateGoal
+      tags: [users]
+      summary: Update a goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGoalRequest"
+      responses:
+        "200":
+          description: Goal updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  /achievements:
+    get:
+      operationId: getAchievements
+      tags: [users]
+      summary: Get user achievements
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +467,453 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        fitnessGoal:
+          type: string
+          enum: [weight_loss, muscle_gain, endurance, flexibility, general_fitness]
+        age:
+          type: integer
+        weight:
+          type: number
+        height:
+          type: number
+        activityLevel:
+          type: string
+          enum: [sedentary, lightly_active, moderately_active, very_active, extra_active]
+      required: [name, email, password, fitnessGoal]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        fitnessGoal:
+          type: string
+        age:
+          type: integer
+        weight:
+          type: number
+        height:
+          type: number
+        activityLevel:
+          type: string
+        avatarUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, email, fitnessGoal]
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        fitnessGoal:
+          type: string
+        age:
+          type: integer
+        weight:
+          type: number
+        height:
+          type: number
+        activityLevel:
+          type: string
+        avatarUrl:
+          type: string
+        bio:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, email]
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        name:
+          type: string
+        age:
+          type: integer
+        weight:
+          type: number
+        height:
+          type: number
+        activityLevel:
+          type: string
+        fitnessGoal:
+          type: string
+        bio:
+          type: string
+      required: [userId]
+
+    UserStats:
+      type: object
+      properties:
+        totalWorkouts:
+          type: integer
+        totalCaloriesBurned:
+          type: integer
+        totalMinutes:
+          type: integer
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        thisWeekWorkouts:
+          type: integer
+        thisWeekCalories:
+          type: integer
+        bmi:
+          type: number
+        bmiCategory:
+          type: string
+      required: [totalWorkouts, totalCaloriesBurned, totalMinutes, currentStreak]
+
+    Workout:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        workoutName:
+          type: string
+        category:
+          type: string
+        duration:
+          type: integer
+        caloriesBurned:
+          type: integer
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutExercise"
+        notes:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, workoutName, duration, caloriesBurned]
+
+    WorkoutExercise:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        exerciseName:
+          type: string
+        sets:
+          type: integer
+        reps:
+          type: integer
+        weight:
+          type: number
+        duration:
+          type: integer
+      required: [exerciseName]
+
+    CreateWorkoutRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        workoutName:
+          type: string
+        category:
+          type: string
+        duration:
+          type: integer
+        caloriesBurned:
+          type: integer
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutExercise"
+        notes:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+      required: [userId, workoutName, duration, caloriesBurned]
+
+    UpdateWorkoutRequest:
+      type: object
+      properties:
+        workoutName:
+          type: string
+        duration:
+          type: integer
+        caloriesBurned:
+          type: integer
+        notes:
+          type: string
+
+    WorkoutPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        duration:
+          type: integer
+        category:
+          type: string
+        isPremium:
+          type: boolean
+        exercises:
+          type: array
+          items:
+            type: string
+      required: [id, name, level, duration, category]
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        muscleGroup:
+          type: string
+        difficulty:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        description:
+          type: string
+        instructions:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: string
+        videoUrl:
+          type: string
+        caloriesPerMinute:
+          type: number
+        equipment:
+          type: string
+      required: [id, name, category, muscleGroup, difficulty]
+
+    ProgressEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        date:
+          type: string
+          format: date
+        workoutsCompleted:
+          type: integer
+        caloriesBurned:
+          type: integer
+        minutesActive:
+          type: integer
+        weight:
+          type: number
+        steps:
+          type: integer
+        mood:
+          type: string
+      required: [id, userId, date, workoutsCompleted]
+
+    LogProgressRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        date:
+          type: string
+          format: date
+        workoutsCompleted:
+          type: integer
+        caloriesBurned:
+          type: integer
+        minutesActive:
+          type: integer
+        weight:
+          type: number
+        steps:
+          type: integer
+        mood:
+          type: string
+      required: [userId, date, workoutsCompleted]
+
+    ProgressSummary:
+      type: object
+      properties:
+        weeklyCalories:
+          type: array
+          items:
+            type: object
+            properties:
+              day:
+                type: string
+              calories:
+                type: integer
+            required: [day, calories]
+        monthlyWorkouts:
+          type: array
+          items:
+            type: object
+            properties:
+              week:
+                type: string
+              count:
+                type: integer
+            required: [week, count]
+        totalThisMonth:
+          type: integer
+        averageCaloriesPerWorkout:
+          type: integer
+      required: [weeklyCalories, monthlyWorkouts, totalThisMonth]
+
+    Goal:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        targetValue:
+          type: number
+        currentValue:
+          type: number
+        unit:
+          type: string
+        deadline:
+          type: string
+          format: date
+        completed:
+          type: boolean
+        category:
+          type: string
+      required: [id, userId, title, targetValue, currentValue]
+
+    CreateGoalRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        targetValue:
+          type: number
+        currentValue:
+          type: number
+        unit:
+          type: string
+        deadline:
+          type: string
+          format: date
+        category:
+          type: string
+      required: [userId, title, targetValue]
+
+    UpdateGoalRequest:
+      type: object
+      properties:
+        currentValue:
+          type: number
+        completed:
+          type: boolean
+        title:
+          type: string
+        targetValue:
+          type: number
+
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        unlockedAt:
+          type: string
+          format: date-time
+        category:
+          type: string
+      required: [id, userId, title, description, icon]

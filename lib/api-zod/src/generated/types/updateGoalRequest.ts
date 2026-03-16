@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface UpdateGoalRequest {
+  currentValue?: number;
+  completed?: boolean;
+  title?: string;
+  targetValue?: number;
 }
