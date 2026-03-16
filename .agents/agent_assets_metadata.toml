@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "lk4M7nkqeJ1ifsX4-KMS6"
+uri = "file://FitPulse.tar.gz"
+type = "unspecified"
+title = "FitPulse - Source Code"
