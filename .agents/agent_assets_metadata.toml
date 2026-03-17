@@ -24,3 +24,9 @@ id = "raZP27i071BewmG5oYORr"
 uri = "file://FitPulse.zip"
 type = "unspecified"
 title = "FitPulse - Complete Project"
+
+[[outputs]]
+id = "ymSJUP1s9E6kEchuFrfG1"
+uri = "file://FitPulse-Chrome.zip"
+type = "unspecified"
+title = "FitPulse - Chrome mein chalane ke liye"
