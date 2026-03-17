@@ -51,8 +51,8 @@ export function AnimatedProgressBar({ progress, label, value, color, height = 8 
 const styles = StyleSheet.create({
   container: { gap: 6 },
   labelRow: { flexDirection: "row", justifyContent: "space-between" },
-  label: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  value: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  label: { fontSize: 13, fontWeight: "500" },
+  value: { fontSize: 13, fontWeight: "600" },
   track: { borderRadius: 100, overflow: "hidden" },
   fill: { borderRadius: 100 },
 });

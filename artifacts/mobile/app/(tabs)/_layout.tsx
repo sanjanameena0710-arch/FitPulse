@@ -59,7 +59,7 @@ function ClassicTabLayout() {
           ) : isWeb ? (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? "#0A0A1A" : "#FFFFFF" }]} />
           ) : null,
-        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 11 },
+        tabBarLabelStyle: { fontWeight: "500", fontSize: 11 },
       }}
     >
       <Tabs.Screen
