@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -25,6 +26,8 @@ type AuthContextType = {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
+  changeEmail: (newEmail: string, password: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 };
 
 type RegisterData = {
@@ -76,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem("fitpulse_user", JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    router.replace("/(tabs)");
   }
 
   async function register(registerData: RegisterData) {
@@ -90,13 +94,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem("fitpulse_user", JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    router.replace("/(tabs)");
   }
 
   async function logout() {
-    await AsyncStorage.removeItem("fitpulse_token");
-    await AsyncStorage.removeItem("fitpulse_user");
+    try {
+      await AsyncStorage.removeItem("fitpulse_token");
+      await AsyncStorage.removeItem("fitpulse_user");
+    } catch (_) {}
     setToken(null);
     setUser(null);
+    router.replace("/(auth)/landing");
   }
 
   function updateUser(data: Partial<User>) {
@@ -106,8 +114,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem("fitpulse_user", JSON.stringify(updated));
   }
 
+  async function changeEmail(newEmail: string, password: string) {
+    if (!user) throw new Error("Not logged in");
+    const res = await fetch(`${API_BASE}/users/change-email`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, newEmail, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to change email");
+    updateUser({ email: newEmail });
+  }
+
+  async function changePassword(currentPassword: string, newPassword: string) {
+    if (!user) throw new Error("Not logged in");
+    const res = await fetch(`${API_BASE}/users/change-password`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, currentPassword, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to change password");
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateUser, changeEmail, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

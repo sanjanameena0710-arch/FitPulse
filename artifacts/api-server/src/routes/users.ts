@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, workoutsTable, progressTable } from "@workspace/db";
 import { eq, desc, gte, sql } from "drizzle-orm";
+import { verifyPassword, hashPassword } from "../lib/auth.js";
 
 const router = Router();
 
@@ -108,6 +109,51 @@ router.get("/stats", async (req, res) => {
       thisWeekWorkouts: thisWeekWorkouts.length, thisWeekCalories,
       bmi, bmiCategory,
     });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/change-email", async (req, res) => {
+  try {
+    const { userId, newEmail, password } = req.body;
+    if (!userId || !newEmail || !password) {
+      return res.status(400).json({ error: "userId, newEmail and password required" });
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!verifyPassword(password, user.passwordHash)) {
+      return res.status(401).json({ error: "Incorrect password", message: "Current password is incorrect" });
+    }
+    const existing = await db.select().from(usersTable).where(eq(usersTable.email, newEmail)).limit(1);
+    if (existing.length > 0 && existing[0].id !== userId) {
+      return res.status(409).json({ error: "Email taken", message: "This email is already in use" });
+    }
+    const [updated] = await db.update(usersTable).set({ email: newEmail, updatedAt: new Date() }).where(eq(usersTable.id, userId)).returning();
+    return res.json({ id: updated.id, email: updated.email, name: updated.name });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/change-password", async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: "userId, currentPassword and newPassword required" });
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!verifyPassword(currentPassword, user.passwordHash)) {
+      return res.status(401).json({ error: "Incorrect password", message: "Current password is incorrect" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Weak password", message: "Password must be at least 6 characters" });
+    }
+    await db.update(usersTable).set({ passwordHash: hashPassword(newPassword), updatedAt: new Date() }).where(eq(usersTable.id, userId));
+    return res.json({ message: "Password changed successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Internal server error" });

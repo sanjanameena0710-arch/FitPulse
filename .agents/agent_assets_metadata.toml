@@ -12,3 +12,9 @@ id = "FTSA9_ugwxsWGJSfjEME7"
 uri = "file://FitPulse-v2.tar.gz"
 type = "unspecified"
 title = "FitPulse - Complete Project (Fixed)"
+
+[[outputs]]
+id = "fdbD4uJLbgdIlkDPBaC12"
+uri = "file://FitPulse-final.tar.gz"
+type = "unspecified"
+title = "FitPulse - Final Project (Logout Fixed + Change Email)"

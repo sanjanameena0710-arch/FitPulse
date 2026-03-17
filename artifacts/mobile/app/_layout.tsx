@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -20,14 +20,17 @@ const queryClient = new QueryClient({
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
+  const segments = useSegments();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        router.replace("/(auth)/landing");
-      }
+    if (isLoading) return;
+    const inAuthGroup = segments[0] === "(auth)";
+    if (!user && !inAuthGroup) {
+      router.replace("/(auth)/landing");
+    } else if (user && inAuthGroup) {
+      router.replace("/(tabs)");
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, segments]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "fade" }}>

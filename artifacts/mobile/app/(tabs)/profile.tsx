@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
-  TextInput, Alert, Switch,
+  TextInput, Alert, Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -51,14 +51,56 @@ const ACTIVITY_LABELS: Record<string, string> = {
   extra_active: "Extra Active",
 };
 
+function ModalCard({
+  visible, onClose, title, children, colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  colors: typeof Colors.dark;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.modalClose}>
+              <Ionicons name="close" size={22} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          {children}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const colors = Colors[scheme === "dark" ? "dark" : "light"];
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, changeEmail, changePassword } = useAuth();
   const queryClient = useQueryClient();
+
   const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState({ name: user?.name || "", bio: "", weight: String(user?.weight || ""), height: String(user?.height || "") });
+  const [editData, setEditData] = useState({
+    name: user?.name || "",
+    bio: "",
+    weight: String(user?.weight || ""),
+    height: String(user?.height || ""),
+  });
+
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailData, setEmailData] = useState({ newEmail: "", password: "" });
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pwData, setPwData] = useState({ current: "", newPw: "", confirm: "" });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
 
   const { data: stats } = useQuery<Stats>({
     queryKey: ["stats", user?.id],
@@ -95,10 +137,56 @@ export default function ProfileScreen() {
   });
 
   function handleLogout() {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Log Out", style: "destructive", onPress: logout },
-    ]);
+    if (Platform.OS === "web") {
+      const ok = window.confirm("Are you sure you want to log out?");
+      if (ok) logout();
+    } else {
+      Alert.alert("Log Out", "Are you sure you want to log out?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Log Out", style: "destructive", onPress: () => logout() },
+      ]);
+    }
+  }
+
+  async function handleChangeEmail() {
+    setEmailError("");
+    if (!emailData.newEmail.includes("@")) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    if (!emailData.password) {
+      setEmailError("Please enter your current password");
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      await changeEmail(emailData.newEmail, emailData.password);
+      setShowEmailModal(false);
+      setEmailData({ newEmail: "", password: "" });
+      Alert.alert("Success", "Your email has been updated!");
+    } catch (err: any) {
+      setEmailError(err.message || "Failed to change email");
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    setPwError("");
+    if (!pwData.current) { setPwError("Enter your current password"); return; }
+    if (pwData.newPw.length < 6) { setPwError("New password must be at least 6 characters"); return; }
+    if (pwData.newPw !== pwData.confirm) { setPwError("New passwords do not match"); return; }
+    setPwLoading(true);
+    try {
+      await changePassword(pwData.current, pwData.newPw);
+      setShowPasswordModal(false);
+      setPwData({ current: "", newPw: "", confirm: "" });
+      Alert.alert("Success", "Your password has been updated!");
+    } catch (err: any) {
+      setPwError(err.message || "Failed to change password");
+    } finally {
+      setPwLoading(false);
+    }
   }
 
   const initials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "FP";
@@ -108,10 +196,7 @@ export default function ProfileScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0),
-            paddingBottom: insets.bottom + 100,
-          }
+          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0), paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -129,7 +214,6 @@ export default function ProfileScreen() {
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
-
             {editing ? (
               <View style={styles.editNameWrap}>
                 <TextInput
@@ -144,7 +228,6 @@ export default function ProfileScreen() {
               <Text style={styles.profileName}>{user?.name}</Text>
             )}
             <Text style={styles.profileEmail}>{user?.email}</Text>
-
             <View style={styles.profileBadges}>
               <View style={styles.profileBadge}>
                 <MaterialCommunityIcons name="lightning-bolt" size={14} color="#FFF" />
@@ -220,14 +303,10 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Save button when editing */}
+        {/* Save when editing */}
         {editing && (
           <Animated.View entering={FadeInDown.springify()}>
-            <TouchableOpacity
-              style={styles.saveBtn}
-              onPress={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending}
-            >
+            <TouchableOpacity style={styles.saveBtn} onPress={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
               <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Text style={styles.saveBtnText}>{updateMutation.isPending ? "Saving..." : "Save Changes"}</Text>
               </LinearGradient>
@@ -256,26 +335,46 @@ export default function ProfileScreen() {
           )}
         </Animated.View>
 
-        {/* Settings */}
+        {/* Account Settings */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
           <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {[
-              { icon: "notifications-outline", label: "Push Notifications", action: () => {} },
-              { icon: "moon-outline", label: "Dark Mode", action: () => {} },
-              { icon: "lock-closed-outline", label: "Change Password", action: () => Alert.alert("Coming Soon", "Password change via email will be implemented.") },
-              { icon: "help-circle-outline", label: "Help & Support", action: () => {} },
-            ].map((item, i) => (
+              {
+                icon: "mail-outline", label: "Change Email",
+                sub: user?.email,
+                action: () => { setEmailData({ newEmail: "", password: "" }); setEmailError(""); setShowEmailModal(true); },
+              },
+              {
+                icon: "lock-closed-outline", label: "Change Password",
+                sub: "Update your password",
+                action: () => { setPwData({ current: "", newPw: "", confirm: "" }); setPwError(""); setShowPasswordModal(true); },
+              },
+              {
+                icon: "notifications-outline", label: "Push Notifications",
+                sub: "Manage alerts",
+                action: () => Alert.alert("Notifications", "Notification settings coming soon."),
+              },
+              {
+                icon: "help-circle-outline", label: "Help & Support",
+                sub: "Get help",
+                action: () => Alert.alert("Support", "Contact us at support@fitpulse.app"),
+              },
+            ].map((item, i, arr) => (
               <TouchableOpacity
                 key={i}
-                style={[styles.settingsRow, i < 3 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                style={[styles.settingsRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
                 onPress={item.action}
+                activeOpacity={0.7}
               >
                 <View style={styles.settingsLeft}>
                   <View style={[styles.settingsIcon, { backgroundColor: "#6C63FF22" }]}>
                     <Ionicons name={item.icon as any} size={18} color="#6C63FF" />
                   </View>
-                  <Text style={[styles.settingsLabel, { color: colors.text }]}>{item.label}</Text>
+                  <View>
+                    <Text style={[styles.settingsLabel, { color: colors.text }]}>{item.label}</Text>
+                    {item.sub ? <Text style={[styles.settingsSub, { color: colors.textMuted }]} numberOfLines={1}>{item.sub}</Text> : null}
+                  </View>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </TouchableOpacity>
@@ -285,12 +384,73 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <Animated.View entering={FadeInDown.delay(350).springify()}>
-          <TouchableOpacity style={[styles.logoutBtn, { borderColor: "#EF444433" }]} onPress={handleLogout}>
+          <TouchableOpacity style={[styles.logoutBtn, { borderColor: "#EF444444", backgroundColor: "#EF444411" }]} onPress={handleLogout} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
+
+      {/* Change Email Modal */}
+      <ModalCard visible={showEmailModal} onClose={() => setShowEmailModal(false)} title="Change Email" colors={colors}>
+        <Text style={[styles.modalSub, { color: colors.textMuted }]}>Current: {user?.email}</Text>
+        <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <Ionicons name="mail-outline" size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            style={[styles.modalInput, { color: colors.text }]}
+            placeholder="New email address"
+            placeholderTextColor={colors.textMuted}
+            value={emailData.newEmail}
+            onChangeText={v => setEmailData(p => ({ ...p, newEmail: v }))}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            style={[styles.modalInput, { color: colors.text }]}
+            placeholder="Current password (to confirm)"
+            placeholderTextColor={colors.textMuted}
+            value={emailData.password}
+            onChangeText={v => setEmailData(p => ({ ...p, password: v }))}
+            secureTextEntry
+          />
+        </View>
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        <TouchableOpacity style={[styles.modalBtn, emailLoading && { opacity: 0.6 }]} onPress={handleChangeEmail} disabled={emailLoading}>
+          <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.modalBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <Text style={styles.modalBtnText}>{emailLoading ? "Updating..." : "Update Email"}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </ModalCard>
+
+      {/* Change Password Modal */}
+      <ModalCard visible={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Change Password" colors={colors}>
+        {[
+          { placeholder: "Current password", key: "current", value: pwData.current },
+          { placeholder: "New password (min 6 chars)", key: "newPw", value: pwData.newPw },
+          { placeholder: "Confirm new password", key: "confirm", value: pwData.confirm },
+        ].map(f => (
+          <View key={f.key} style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+            <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
+            <TextInput
+              style={[styles.modalInput, { color: colors.text }]}
+              placeholder={f.placeholder}
+              placeholderTextColor={colors.textMuted}
+              value={f.value}
+              onChangeText={v => setPwData(p => ({ ...p, [f.key]: v }))}
+              secureTextEntry
+            />
+          </View>
+        ))}
+        {pwError ? <Text style={styles.errorText}>{pwError}</Text> : null}
+        <TouchableOpacity style={[styles.modalBtn, pwLoading && { opacity: 0.6 }]} onPress={handleChangePassword} disabled={pwLoading}>
+          <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.modalBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <Text style={styles.modalBtnText}>{pwLoading ? "Updating..." : "Update Password"}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </ModalCard>
     </View>
   );
 }
@@ -334,9 +494,22 @@ const styles = StyleSheet.create({
   achDesc: { fontSize: 10, fontWeight: "400", textAlign: "center" },
   settingsCard: { borderRadius: 18, borderWidth: 1, overflow: "hidden", marginBottom: 24 },
   settingsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16 },
-  settingsLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  settingsIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  settingsLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, marginRight: 8 },
+  settingsIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   settingsLabel: { fontSize: 15, fontWeight: "500" },
+  settingsSub: { fontSize: 12, fontWeight: "400", marginTop: 1 },
   logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 16, borderWidth: 1, marginBottom: 12 },
   logoutText: { fontSize: 15, fontWeight: "600", color: "#EF4444" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalCard: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, gap: 14 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  modalTitle: { fontSize: 20, fontWeight: "700" },
+  modalClose: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+  modalSub: { fontSize: 13, fontWeight: "400", marginBottom: 4 },
+  inputWrap: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  modalInput: { flex: 1, fontSize: 15, fontWeight: "400" },
+  errorText: { fontSize: 13, color: "#EF4444", fontWeight: "500" },
+  modalBtn: { borderRadius: 14, overflow: "hidden", marginTop: 4 },
+  modalBtnGrad: { paddingVertical: 16, alignItems: "center" },
+  modalBtnText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
 });
