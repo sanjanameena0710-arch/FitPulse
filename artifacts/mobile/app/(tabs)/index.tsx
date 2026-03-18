@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
+import FitPulseLogo from "@/components/FitPulseLogo";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -126,7 +127,7 @@ export default function HomeScreen() {
                 <Text style={styles.heroSub}>Workouts completed</Text>
               </View>
               <View style={styles.heroRight}>
-                <MaterialCommunityIcons name="lightning-bolt-circle" size={64} color="rgba(255,255,255,0.3)" />
+                <FitPulseLogo size={64} />
               </View>
             </View>
 

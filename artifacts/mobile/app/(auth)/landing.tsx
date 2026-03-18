@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import FitPulseLogo from "@/components/FitPulseLogo";
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay, withSpring, withRepeat, withSequence, Easing,
 } from "react-native-reanimated";
@@ -103,9 +104,7 @@ export default function LandingScreen() {
 
       <View style={[styles.inner, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 34 }]}>
         <View style={styles.logoRow}>
-          <LinearGradient colors={["#6C63FF", "#FF6B35"]} style={styles.logoCircle} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <MaterialCommunityIcons name="lightning-bolt" size={28} color="#FFF" />
-          </LinearGradient>
+          <FitPulseLogo size={52} />
           <Text style={styles.brandName}>FitPulse</Text>
         </View>
 
@@ -157,7 +156,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingHorizontal: 28 },
   logoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logoCircle: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   brandName: { fontSize: 22, fontWeight: "700", color: "#FFF" },
   statsRow: { flexDirection: "row", gap: 10, marginTop: 40 },
   statBadge: {
