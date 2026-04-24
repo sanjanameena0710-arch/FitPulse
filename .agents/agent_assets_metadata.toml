@@ -35,7 +35,7 @@ title = "FitPulse - Chrome mein chalane ke liye"
 id = "CDY1AOGWL_Z47Ry8Pf18M"
 uri = "file://FitPulse-Mobile-App.zip"
 type = "unspecified"
-title = "FitPulse Mobile App - Source Code (Expo)"
+title = "FitPulse Mobile App - Updated (EAS config + APK guide included)"
 
 [[outputs]]
 id = "g1oha1vzHCUFHG_zappMi"
@@ -48,3 +48,9 @@ id = "Sr2zYRWdLxQN06094SIHG"
 uri = "file://FitPulse-Website-Deploy.zip"
 type = "unspecified"
 title = "FitPulse Website - Deploy ZIP (Render / Railway / Heroku / VPS ready)"
+
+[[outputs]]
+id = "wRCu845jETBMcRFtjkpaG"
+uri = "file://APK-Build-Share-Guide.txt"
+type = "text"
+title = "APK Build & Share - Step by Step Guide (Hindi-Urdu)"

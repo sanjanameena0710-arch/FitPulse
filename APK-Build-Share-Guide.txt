@@ -1,0 +1,229 @@
+================================================================
+   FITPULSE APP — APK BUILD, SHARE & PUBLISH (Step-by-Step)
+================================================================
+
+   Total time: 15–20 minutes
+   Cost: FREE  (Expo EAS gives 30 free builds/month)
+   You DON'T need a Mac, Android Studio, or any heavy tool.
+   Everything happens in the cloud.
+
+================================================================
+   PART A — APK BANAO (Build your downloadable APK)
+================================================================
+
+----------------------------------------------------------------
+STEP 1: Expo account banao (1 minute, FREE)
+----------------------------------------------------------------
+   • Browser kholo:  https://expo.dev/signup
+   • Email + password se signup karo
+   • Email verify karo (inbox check karo)
+
+----------------------------------------------------------------
+STEP 2: Computer pe Node.js install hai? (skip if yes)
+----------------------------------------------------------------
+   • Download:  https://nodejs.org   (LTS version lo, jaise 20.x)
+   • Install karke restart karo terminal/cmd
+
+----------------------------------------------------------------
+STEP 3: EAS CLI install karo (1 minute)
+----------------------------------------------------------------
+   Terminal / Command Prompt kholo aur ye command chalao:
+
+       npm install -g eas-cli
+
+   Verify hua ya nahi:
+       eas --version
+
+----------------------------------------------------------------
+STEP 4: FitPulse mobile source code ready karo
+----------------------------------------------------------------
+   • FitPulse-Mobile-App.zip ko extract karo
+   • Terminal mein us folder mein jao:
+       cd FitPulse-Mobile-App
+
+   • pnpm install karo (one-time, ~2 minutes):
+       npm install -g pnpm
+       pnpm install
+
+----------------------------------------------------------------
+STEP 5: EAS pe login karo
+----------------------------------------------------------------
+       cd artifacts/mobile
+       eas login
+
+   Apna Expo email + password daalo (Step 1 wala).
+
+----------------------------------------------------------------
+STEP 6: Project ko EAS se link karo (one-time)
+----------------------------------------------------------------
+       eas init
+
+   Pucchega "Create new project?" → Y dabao
+   Project name: fitpulse  (ya jo aap chahein)
+
+----------------------------------------------------------------
+STEP 7: APK BUILD KARO (cloud pe banega — 10-15 min wait)
+----------------------------------------------------------------
+       eas build -p android --profile preview
+
+   • Pehli baar credentials puchega → "Generate new keystore" → Y
+   • Build cloud pe start ho jayega
+   • Terminal mein ek URL milega jaise:
+       https://expo.dev/accounts/yourname/projects/fitpulse/builds/...
+
+----------------------------------------------------------------
+STEP 8: APK DOWNLOAD KARO
+----------------------------------------------------------------
+   • Wo URL kholo browser mein
+   • Build complete hote hi (10-15 min) ek "Download" button milega
+   • APK direct download ho jayegi (~30-50 MB)
+   • File ka naam: application-xxxxx.apk
+
+   ✓ DONE! Aapki APK ready hai.
+
+================================================================
+   PART B — APK SHARE / PUBLIC KARO (4 ways)
+================================================================
+
+================================================================
+WAY 1 — DIRECT DOWNLOAD LINK (sabse easy, FREE, instant)
+================================================================
+   Expo automatically ek public download URL deta hai jo aap
+   kisi ko bhi share kar sakte ho. URL kuch aisa dikhega:
+
+       https://expo.dev/artifacts/eas/abc123xyz.apk
+
+   • Wo build URL share karo dosto / clients ko
+   • Wo direct phone se download kar sakte hain
+   • Phone mein "Install from unknown sources" enable karna hoga
+     Settings → Apps → Special access → Install unknown apps
+
+   PRO: 0 cost, instant
+   CON: Link 30 din baad expire hota hai
+
+================================================================
+WAY 2 — APNI WEBSITE / DRIVE PE HOST KARO (permanent)
+================================================================
+
+   Option 2A — Google Drive (free, easy):
+   • APK file Google Drive pe upload karo
+   • File pe right-click → "Share" → "Anyone with link"
+   • Link copy karke share karo
+   • Permanent rehta hai
+
+   Option 2B — GitHub Releases (developers ke liye, free):
+   • github.com pe new repo banao
+   • "Releases" → "Create a new release"
+   • APK file attach karo
+   • Direct download URL milega
+
+   Option 2C — Apni website pe daalo:
+   • FitPulse-Website-Deploy.zip ki public/ folder mein APK rakho
+   • Jab website live ho, link banega:
+       https://yourdomain.com/fitpulse.apk
+
+================================================================
+WAY 3 — GOOGLE PLAY STORE (official, professional)
+================================================================
+   Sabse credible — par paid + paperwork.
+
+   STEP 1: Google Play Console account banao
+       https://play.google.com/console
+       One-time fee: $25 (lifetime)
+
+   STEP 2: Production build banao (AAB format, not APK):
+       eas build -p android --profile production
+
+   STEP 3: Play Console mein:
+       • "Create app" karo
+       • Naam, description, screenshots upload karo
+       • Privacy policy URL chahiye (free banao: termly.io)
+       • Content rating questionnaire bharo
+       • AAB file upload karo
+       • Review submit karo
+
+   STEP 4: Wait 1-7 din review ke liye → Live ho jayega
+
+   PRO: Lakhon log dhundh sakte hain, auto-updates, trusted
+   CON: $25 one-time, 5-7 din review, strict policies
+
+================================================================
+WAY 4 — ALTERNATE STORES (no review, fast)
+================================================================
+   APKPure, Aptoide, F-Droid jaise stores pe bhi daal sakte ho:
+
+   • APKPure:  https://apkpure.com/developer
+   • Aptoide:  https://en.aptoide.com/uploader
+   • Samsung Galaxy Store: https://seller.samsungapps.com
+
+   In par seedhi APK upload hoti hai, kuch hi ghante mein live.
+
+================================================================
+   IMPORTANT TIPS
+================================================================
+
+1. BACKEND BHI HOST KARNA HOGA:
+   App ko APK karne se sirf phone-side chalega.
+   Login/data save hone ke liye API server live hona chahiye.
+
+   • FitPulse-Website-Deploy.zip mein backend bhi included hai
+   • Pehle wo Render/Railway pe deploy karo
+   • Phir mobile app mein API URL update karo:
+     File: artifacts/mobile/context/AuthContext.tsx
+     Aur: artifacts/mobile/app/(tabs)/index.tsx
+     Search karo: "EXPO_PUBLIC_DOMAIN" ya "/api"
+     Apna live backend URL daalo, jaise:
+         https://fitpulse-backend.onrender.com/api
+
+2. APP ICON / NAME CHANGE:
+   File: artifacts/mobile/app.json
+   • "name" — display name
+   • "android.package" — unique ID (com.yourbrand.fitpulse)
+   • Icon: artifacts/mobile/assets/images/icon.png replace karo
+
+3. VERSION UPDATE:
+   Naya APK release karne se pehle:
+   • app.json mein "version" badhao (1.0.0 → 1.0.1)
+   • app.json mein "android.versionCode" badhao (1 → 2)
+
+4. APK BUILD FAIL HO TO:
+   • Internet check karo
+   • `eas build:list` se status dekho
+   • Logs URL pe click karke error padho
+
+================================================================
+   QUICK COMMAND REFERENCE
+================================================================
+
+   # APK build (preview, internal sharing)
+   eas build -p android --profile preview
+
+   # AAB build (Play Store ke liye)
+   eas build -p android --profile production
+
+   # iOS build (Mac ki zaroorat nahi, cloud par banta hai)
+   eas build -p ios --profile preview
+
+   # Build status dekhna
+   eas build:list
+
+   # Direct Play Store ko submit
+   eas submit -p android
+
+================================================================
+   READY-MADE FILES (pehle se included hain ZIP mein)
+================================================================
+   ✓ artifacts/mobile/eas.json     - Build profiles set hain
+   ✓ artifacts/mobile/app.json     - Package name set hai
+   ✓ artifacts/mobile/assets/      - Icon ready hai
+
+================================================================
+   HELP / DOCS
+================================================================
+   • Expo EAS docs:  https://docs.expo.dev/build/introduction/
+   • Expo Discord:   https://chat.expo.dev
+   • Play Console:   https://support.google.com/googleplay/android-developer
+
+================================================================
+   GOOD LUCK! 💪
+================================================================
