@@ -42,3 +42,9 @@ id = "g1oha1vzHCUFHG_zappMi"
 uri = "file://FitPulse-Website.zip"
 type = "unspecified"
 title = "FitPulse Website - Standalone Source Code (Browser)"
+
+[[outputs]]
+id = "Sr2zYRWdLxQN06094SIHG"
+uri = "file://FitPulse-Website-Deploy.zip"
+type = "unspecified"
+title = "FitPulse Website - Deploy ZIP (Render / Railway / Heroku / VPS ready)"
