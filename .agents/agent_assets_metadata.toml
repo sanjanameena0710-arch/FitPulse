@@ -30,3 +30,15 @@ id = "ymSJUP1s9E6kEchuFrfG1"
 uri = "file://FitPulse-Chrome.zip"
 type = "unspecified"
 title = "FitPulse - Chrome mein chalane ke liye"
+
+[[outputs]]
+id = "CDY1AOGWL_Z47Ry8Pf18M"
+uri = "file://FitPulse-Mobile-App.zip"
+type = "unspecified"
+title = "FitPulse Mobile App - Source Code (Expo)"
+
+[[outputs]]
+id = "g1oha1vzHCUFHG_zappMi"
+uri = "file://FitPulse-Website.zip"
+type = "unspecified"
+title = "FitPulse Website - Standalone Source Code (Browser)"
