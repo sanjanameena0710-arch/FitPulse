@@ -1,10 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+import { LocalStore, StoredUser } from "@/lib/localStore";
 
 export type User = {
   id: number;
@@ -15,17 +11,17 @@ export type User = {
   weight?: number;
   height?: number;
   activityLevel?: string;
+  bio?: string;
   avatarUrl?: string;
 };
 
 type AuthContextType = {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  updateUser: (data: Partial<User>) => void;
+  updateUser: (data: Partial<User>) => Promise<void>;
   changeEmail: (newEmail: string, password: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 };
@@ -41,104 +37,70 @@ type RegisterData = {
   activityLevel?: string;
 };
 
+function toUser(u: StoredUser): User {
+  const { password, ...rest } = u;
+  return rest;
+}
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadStoredAuth();
+    init();
   }, []);
 
-  async function loadStoredAuth() {
+  async function init() {
     try {
-      const storedToken = await AsyncStorage.getItem("fitpulse_token");
-      const storedUser = await AsyncStorage.getItem("fitpulse_user");
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      }
+      await LocalStore.ensureSeeded();
+      const current = await LocalStore.getCurrentUser();
+      if (current) setUser(toUser(current));
     } catch (err) {
-      console.error("Failed to load auth:", err);
+      console.error("Auth init failed:", err);
     } finally {
       setIsLoading(false);
     }
   }
 
   async function login(email: string, password: string) {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Login failed");
-    await AsyncStorage.setItem("fitpulse_token", data.token);
-    await AsyncStorage.setItem("fitpulse_user", JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
+    const u = await LocalStore.login(email, password);
+    setUser(toUser(u));
     router.replace("/(tabs)");
   }
 
-  async function register(registerData: RegisterData) {
-    const res = await fetch(`${API_BASE}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(registerData),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Registration failed");
-    await AsyncStorage.setItem("fitpulse_token", data.token);
-    await AsyncStorage.setItem("fitpulse_user", JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
+  async function register(data: RegisterData) {
+    const u = await LocalStore.register(data);
+    setUser(toUser(u));
     router.replace("/(tabs)");
   }
 
   async function logout() {
-    try {
-      await AsyncStorage.removeItem("fitpulse_token");
-      await AsyncStorage.removeItem("fitpulse_user");
-    } catch (_) {}
-    setToken(null);
+    await LocalStore.logout();
     setUser(null);
     router.replace("/(auth)/landing");
   }
 
-  function updateUser(data: Partial<User>) {
+  async function updateUser(data: Partial<User>) {
     if (!user) return;
-    const updated = { ...user, ...data };
-    setUser(updated);
-    AsyncStorage.setItem("fitpulse_user", JSON.stringify(updated));
+    const updated = await LocalStore.updateUser(user.id, data);
+    setUser(toUser(updated));
   }
 
   async function changeEmail(newEmail: string, password: string) {
     if (!user) throw new Error("Not logged in");
-    const res = await fetch(`${API_BASE}/users/change-email`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, newEmail, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to change email");
-    updateUser({ email: newEmail });
+    const updated = await LocalStore.changeEmail(user.id, newEmail, password);
+    setUser(toUser(updated));
   }
 
   async function changePassword(currentPassword: string, newPassword: string) {
     if (!user) throw new Error("Not logged in");
-    const res = await fetch(`${API_BASE}/users/change-password`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, currentPassword, newPassword }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to change password");
+    await LocalStore.changePassword(user.id, currentPassword, newPassword);
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateUser, changeEmail, changePassword }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser, changeEmail, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

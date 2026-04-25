@@ -1,31 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring, withTiming, FadeInDown,
-} from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "react-native";
-import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import FitPulseLogo from "@/components/FitPulseLogo";
-
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+import { LocalStore, Workout } from "@/lib/localStore";
 
 const QUICK_WORKOUTS = [
-  { name: "Morning HIIT", duration: "20 min", calories: 280, color: "#FF6B35", icon: "flame" },
-  { name: "Upper Body", duration: "35 min", calories: 320, color: "#6C63FF", icon: "barbell" },
-  { name: "Core Blast", duration: "15 min", calories: 160, color: "#00D4FF", icon: "body" },
-  { name: "Leg Day", duration: "45 min", calories: 410, color: "#22C55E", icon: "walk" },
+  { name: "Morning HIIT", duration: "20 min", calories: 280, color: "#FF6B35", icon: "flame", category: "hiit" },
+  { name: "Upper Body", duration: "35 min", calories: 320, color: "#6C63FF", icon: "barbell", category: "strength" },
+  { name: "Core Blast", duration: "15 min", calories: 160, color: "#00D4FF", icon: "body", category: "strength" },
+  { name: "Leg Day", duration: "45 min", calories: 410, color: "#22C55E", icon: "walk", category: "strength" },
 ];
 
 type Stats = {
@@ -37,44 +31,41 @@ type Stats = {
   bmiCategory: string | null;
 };
 
-type Workout = {
-  id: number;
-  workoutName: string;
-  duration: number;
-  caloriesBurned: number;
-  category: string;
-  completedAt: string;
-};
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const colors = Colors[scheme === "dark" ? "dark" : "light"];
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
+  const [waterToday, setWaterToday] = useState(0);
 
-  const { data: stats, refetch: refetchStats } = useQuery<Stats>({
-    queryKey: ["stats", user?.id],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/users/stats?userId=${user?.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-  });
+  const load = useCallback(async () => {
+    if (!user?.id) return;
+    const [s, w, water] = await Promise.all([
+      LocalStore.getStats(user.id),
+      LocalStore.getWorkouts(user.id, 5),
+      LocalStore.getWaterToday(user.id),
+    ]);
+    setStats(s);
+    setRecentWorkouts(w);
+    setWaterToday(water);
+  }, [user?.id]);
 
-  const { data: recentWorkouts = [], refetch: refetchWorkouts } = useQuery<Workout[]>({
-    queryKey: ["workouts", user?.id],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/workouts?userId=${user?.id}&limit=5`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-  });
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);
-    await Promise.all([refetchStats(), refetchWorkouts()]);
+    await load();
     setRefreshing(false);
+  }
+
+  async function quickAddWater() {
+    if (!user?.id) return;
+    const newCount = Math.min(waterToday + 1, 12);
+    await LocalStore.setWaterToday(user.id, newCount);
+    setWaterToday(newCount);
   }
 
   const greeting = () => {
@@ -106,9 +97,11 @@ export default function HomeScreen() {
             <Text style={[styles.greeting, { color: colors.textSecondary }]}>{greeting()}</Text>
             <Text style={[styles.userName, { color: colors.text }]}>{user?.name?.split(" ")[0] || "Athlete"}</Text>
           </View>
-          <TouchableOpacity style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="notifications-outline" size={22} color={colors.text} />
-            <View style={styles.notifDot} />
+          <TouchableOpacity
+            style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push("/(tabs)/profile")}
+          >
+            <Ionicons name="person-outline" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -168,6 +161,37 @@ export default function HomeScreen() {
           ))}
         </Animated.View>
 
+        {/* Water Tracker */}
+        <Animated.View entering={FadeInDown.delay(250).springify()}>
+          <TouchableOpacity
+            style={[styles.waterCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={quickAddWater}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.waterIcon, { backgroundColor: "#00D4FF22" }]}>
+              <Ionicons name="water" size={22} color="#00D4FF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.waterTitle, { color: colors.text }]}>Water today</Text>
+              <Text style={[styles.waterSub, { color: colors.textMuted }]}>{waterToday}/8 glasses · tap to add</Text>
+              <View style={styles.waterDots}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.waterDot,
+                      { backgroundColor: i < waterToday ? "#00D4FF" : colors.border },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+            <View style={styles.waterPlus}>
+              <Ionicons name="add" size={22} color="#00D4FF" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
         {/* Quick Start */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
           <View style={styles.sectionHeader}>
@@ -182,7 +206,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={i}
                 style={[styles.quickCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push("/(tabs)/workout")}
+                onPress={() => router.push({ pathname: "/workout/active", params: { name: w.name, category: w.category } })}
                 activeOpacity={0.8}
               >
                 <View style={[styles.quickIcon, { backgroundColor: w.color + "22" }]}>
@@ -206,7 +230,7 @@ export default function HomeScreen() {
               <View style={styles.bmiLeft}>
                 <Text style={[styles.bmiLabel, { color: colors.textSecondary }]}>Your BMI</Text>
                 <Text style={[styles.bmiValue, { color: colors.text }]}>{stats.bmi}</Text>
-                <Text style={[styles.bmiCategory, { color: colors.bmiCategory === "Normal" ? "#22C55E" : "#F59E0B" }]}>{stats.bmiCategory}</Text>
+                <Text style={[styles.bmiCategory, { color: stats.bmiCategory === "Normal" ? "#22C55E" : "#F59E0B" }]}>{stats.bmiCategory}</Text>
               </View>
               <AnimatedProgressBar
                 progress={Math.min((stats.bmi - 15) / 25, 1)}
@@ -232,7 +256,7 @@ export default function HomeScreen() {
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>No workouts yet. Start your first one!</Text>
               <TouchableOpacity
                 style={styles.startBtn}
-                onPress={() => router.push("/(tabs)/workout")}
+                onPress={() => router.push("/workout/active")}
               >
                 <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.startBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                   <Text style={styles.startBtnText}>Start Workout</Text>
@@ -283,7 +307,6 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, fontWeight: "400" },
   userName: { fontSize: 24, fontWeight: "700", letterSpacing: -0.5 },
   notifBtn: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  notifDot: { position: "absolute", top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF6B35", borderWidth: 1.5, borderColor: "#FFF" },
   heroCard: { borderRadius: 24, padding: 22, marginBottom: 16 },
   heroContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
   heroLabel: { fontSize: 13, fontWeight: "500", color: "rgba(255,255,255,0.7)", marginBottom: 4 },
@@ -297,11 +320,18 @@ const styles = StyleSheet.create({
   heroStats: { flexDirection: "row", gap: 20 },
   heroStat: { flexDirection: "row", alignItems: "center", gap: 6 },
   heroStatText: { fontSize: 13, fontWeight: "500", color: "rgba(255,255,255,0.8)" },
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
   statCard: { flex: 1, borderRadius: 16, padding: 14, borderWidth: 1, alignItems: "center", gap: 6 },
   statIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   statValue: { fontSize: 20, fontWeight: "700", letterSpacing: -0.5 },
   statLabel: { fontSize: 11, fontWeight: "400" },
+  waterCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 18, padding: 14, borderWidth: 1, marginBottom: 24 },
+  waterIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  waterTitle: { fontSize: 15, fontWeight: "600" },
+  waterSub: { fontSize: 12, fontWeight: "400", marginTop: 2, marginBottom: 8 },
+  waterDots: { flexDirection: "row", gap: 4 },
+  waterDot: { flex: 1, height: 6, borderRadius: 3 },
+  waterPlus: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#00D4FF22", alignItems: "center", justifyContent: "center" },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   sectionTitle: { fontSize: 18, fontWeight: "600" },
   seeAll: { fontSize: 14, fontWeight: "500" },
@@ -322,7 +352,7 @@ const styles = StyleSheet.create({
   startBtn: { borderRadius: 14, overflow: "hidden", width: "100%" },
   startBtnGrad: { paddingVertical: 14, alignItems: "center" },
   startBtnText: { fontSize: 15, fontWeight: "600", color: "#FFF" },
-  workoutItem: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 14, borderWidth: 1, marginBottom: 0 },
+  workoutItem: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 14, borderWidth: 1 },
   workoutIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   workoutName: { fontSize: 15, fontWeight: "600" },
   workoutMeta: { fontSize: 12, fontWeight: "400", marginTop: 2 },

@@ -1,0 +1,243 @@
+================================================================
+   FITPULSE — CLIENT KO BECHNE KI COMPLETE GUIDE (Selling Guide)
+   Target Price: ₹30,000 – ₹40,000 INR per client
+================================================================
+
+YEH GUIDE SIRF AAPKE LIYE HAI — CLIENT KO MAT DENA!
+
+================================================================
+1) AAPKE PAAS KYA HAI (Product Summary)
+================================================================
+
+FitPulse ek "Premium Fitness Tracker App" hai jisme 2 versions hain:
+
+   A) MOBILE APP (Android APK)
+      - Bilkul offline kaam karta hai
+      - Kisi internet ya server ki zaroorat NAHI
+      - 100% client ke phone par data
+      - Camera se reps automatically count karta hai
+      - Demo account: demo@fitpulse.app / demo123
+
+   B) WEBSITE (HTML/JS) 
+      - Single HTML file open karke chal jaata hai
+      - Kisi backend/server ki zaroorat NAHI
+      - localStorage mein saara data
+      - Hosting bhi free (Netlify, Vercel, GitHub Pages)
+
+FEATURES (poora list — client ko dikhao):
+   ✓ Login / Register / Profile
+   ✓ 8 ready-made workout plans (Upper Body, Leg Day, HIIT, Yoga, etc.)
+   ✓ Custom workout banane ki facility
+   ✓ Live timer with calorie counter
+   ✓ Camera-based AI Rep Counter (USP — bahut bada selling point)
+   ✓ Water tracking (8 glasses/day)
+   ✓ Progress charts (weekly activity + water)
+   ✓ Goals (custom banao, track karo)
+   ✓ Achievements / Badges (12 unlock-able)
+   ✓ Before/After Progress Photos with side-by-side compare
+   ✓ BMI calculator
+   ✓ Export/Import data backup
+   ✓ Premium dark theme design (IOS/Android style)
+
+================================================================
+2) PRICING — KITNE MEIN BECHNA HAI?
+================================================================
+
+BASE PRICE: ₹30,000
+PREMIUM (with customization): ₹35,000 – ₹40,000
+
+PACKAGE 1 — STARTER (₹30,000):
+   - Aapka logo & app name change kar ke dunga
+   - APK file install ke liye ready
+   - Website ek hosting par live kar dunga (free hosting)
+   - Basic deployment guide
+   
+PACKAGE 2 — PROFESSIONAL (₹35,000):
+   - Sab Starter mein hai +
+   - Custom color scheme (client ki branding)
+   - 1 month free support (whatsapp/calls)
+   - Custom workout plans add karna (client ke business ke hisab se)
+   
+PACKAGE 3 — PREMIUM (₹40,000):
+   - Sab Professional mein hai +
+   - Play Store par publish karne ki guidance
+   - 3 months free support
+   - Future updates priority
+
+================================================================
+3) KAUN SE CLIENTS TARGET KARO?
+================================================================
+
+Best clients (high conversion):
+   1. GYM OWNERS — apne members ko free app de sakte hain
+   2. PERSONAL TRAINERS — clients ko track karne ke liye
+   3. YOGA INSTRUCTORS — apne students ke liye
+   4. NUTRITION COACHES — diet + exercise tracking
+   5. PHYSIOTHERAPISTS — patients ki exercise compliance
+   6. FITNESS YOUTUBERS / INFLUENCERS — apna brand banane ke liye
+   7. SCHOOLS / COLLEGES — sports department ke liye
+   8. CORPORATE — employees wellness program
+
+Kahan dhundo:
+   - Instagram (gym pages, trainer pages)
+   - Facebook fitness groups
+   - JustDial / IndiaMart par "gym owner"
+   - Local gyms walk-in karke
+   - Whatsapp groups (fitness coaches)
+
+================================================================
+4) PITCH SCRIPT — JAB CLIENT KO BAAT KAREN
+================================================================
+
+OPENING (chote response milne tak short rakho):
+
+"Sir/Madam, main aap ke liye ek custom fitness app banata hoon
+jo aap ke gym/business ke naam se ho. Members workout track karte
+hain, reps camera se count hote hain, aur saara data unke phone
+par hi rehta hai. Demo dekh lijiye?"
+
+DEMO POINTS (in order):
+   1. Login screen pe "Demo Login" daba ke open karo
+   2. Home screen — "Dekhiye, ye streak, calories, water tracking"
+   3. Workout tab — "Yahan se camera button click karo"
+   4. CAMERA — "Yeh AI rep counter hai — automatic reps count karta hai"
+   5. Progress tab — "Yahan weekly chart, goals"
+   6. Photos tab — "Members before/after photo compare kar sakte hain"
+   7. Achievements — "Gamification — log motivated rehte hain"
+
+KEY OBJECTION HANDLING:
+
+   Q: "Internet chahiye?"
+   A: "BILKUL NAHI! Saara data phone ya browser mein hai. Server cost zero."
+
+   Q: "Kya secure hai?"
+   A: "100%. Data kahin upload nahi hota. Member ke device par hi"
+
+   Q: "Update kaise honge?"
+   A: "App version updates dunga 1 saal tak free."
+
+   Q: "Mehnga lag raha hai"
+   A: "Sir agar ek developer hire karein to monthly ₹40K-50K
+      lagega. Yeh one-time cost hai. Aur server bhi free."
+
+   Q: "Discount?"
+   A: "Sir final price ₹30K hai. Agar 2 clients aur referral
+      karein to ₹3K cashback de sakta hoon."
+
+================================================================
+5) AAP KYA DELIVER KARENGE (Deliverables)
+================================================================
+
+CLIENT KO YEH 3 CHEEZEIN BHEJEN:
+
+   1. APK file (Android phone par install ke liye)
+      → File: FitPulse.apk (build instructions ZIP mein hai)
+      
+   2. Website folder (zip karke do)
+      → File: FitPulse-Web-Deploy.zip
+      → Client ko CLIENT-WEB-DEPLOY.txt forward karein
+
+   3. User guide (Hindi/English)
+      → File: CLIENT-USER-GUIDE.txt
+
+OPTIONAL (extra paisa):
+   - Logo design alag se ₹2000-5000
+   - Custom colors ₹1500
+   - Workout plans customize karna ₹500/plan
+
+================================================================
+6) APK KAISE BANAYEN (Mobile App)
+================================================================
+
+Aap ke paas FitPulse-APK-Build.zip hai. Iske 2 tareeke hain:
+
+OPTION A — EAS Build (RECOMMENDED, free):
+   1. https://expo.dev par account banao
+   2. Terminal mein: npm install -g eas-cli
+   3. cd FitPulse-APK-Build
+   4. npm install
+   5. eas login
+   6. eas build --platform android --profile preview
+   7. ~15 min mein APK link mil jaayega — download karo
+
+OPTION B — Local build:
+   1. Android Studio install
+   2. cd FitPulse-APK-Build
+   3. npx expo prebuild
+   4. cd android && ./gradlew assembleRelease
+   5. APK milega: android/app/build/outputs/apk/release/
+
+CLIENT BRANDING change karne ke liye:
+   - app.json file edit karo
+   - "name": "Aap Ka App Naam"
+   - "ios.bundleIdentifier" aur "android.package": "com.clientname.app"
+   - assets/images/icon.png replace karo
+
+================================================================
+7) WEBSITE KAISE DEPLOY KAREN
+================================================================
+
+Sabse easy: NETLIFY DROP (5 second)
+   1. https://app.netlify.com/drop par jao
+   2. FitPulse-Web-Deploy folder drag karo
+   3. Live URL mil jaata hai (free)
+   4. Custom domain (₹500/saal) connect karo
+
+Aur options:
+   - Vercel (vercel.com) — drag-drop
+   - GitHub Pages — git push
+   - Hostinger / GoDaddy — file manager se upload
+
+   *** CLIENT-WEB-DEPLOY.txt full instructions hai ***
+
+================================================================
+8) FAYDA-NUKSAAN (Apke liye)
+================================================================
+
+PER CLIENT KAMAI:
+   - Base: ₹30,000
+   - Aapka time: 1-2 din (deploy + customize)
+   - Net profit per client: ₹28,000+ (no hosting cost)
+
+TARGET:
+   - Month mein 2-3 clients = ₹60K-90K
+   - Saal mein 30+ clients = ₹9 lakh+ income
+
+REPEAT REVENUE:
+   - Updates: ₹2000/year per client
+   - New features: ₹500-2000 per request
+   - 30 clients × ₹2K updates = ₹60K passive income
+
+================================================================
+9) IMPORTANT SAFETY TIPS
+================================================================
+
+   - PEHLE 50% advance lo, baaki delivery par
+   - Bank transfer / UPI hi accept karo (cash dangerous)
+   - Likhit agreement banao (1 page WhatsApp message bhi chalega):
+        * Kya deliver hoga
+        * Kab tak (e.g. 5 din)
+        * Updates kab tak free
+        * Refund policy (mein refund nahi dunga, ek baar APK build ho gaya)
+   - Source code MAT do (sirf APK + website folder do)
+   - Apne logo/credits chhupa ke rakho ek jagah (footer mein "Powered by..." chhota)
+
+================================================================
+10) TESTIMONIALS / SOCIAL PROOF KAISE BANAYE
+================================================================
+
+   - First 2 clients ko ₹15-20K mein do (loss leader)
+   - Unka video testimonial lo (1 minute)
+   - WhatsApp status pe daalo
+   - Instagram pe before/after dikha do (app mein)
+   - 5-star Google Review request karo
+
+PORTFOLIO BANAO:
+   - 1 demo URL hamesha live rakho
+   - Demo APK Google Drive link rakho
+   - "Past clients" list (jhuth bhi chalega initial mein, kuch demo names)
+
+================================================================
+                    ALL THE BEST!
+              First sale fast karo, momentum bana lo
+================================================================

@@ -1,0 +1,176 @@
+================================================================
+   FITPULSE WEBSITE — DEPLOYMENT GUIDE
+   (Apni website ko internet par live kaise karein)
+================================================================
+
+WELCOME! Yeh guide aapke FitPulse website ko free mein
+duniya bhar mein available karne ke liye hai.
+
+Aapko PROGRAMMING ya SERVER ki zaroorat NAHI hai. Bas
+4 simple steps follow karein.
+
+================================================================
+JO AAPKE PAAS HONA CHAHIYE
+================================================================
+
+   1. FitPulse-Web-Deploy.zip file (humne diya)
+   2. Ek phone ya laptop with internet
+   3. Email account
+   4. (Optional) Custom domain like myapp.com
+
+================================================================
+METHOD 1 — NETLIFY DROP (Sabse Easy, 2 minute)
+================================================================
+
+STEP 1: ZIP file extract karo
+   - Phone par: ZArchiver app se extract karo
+   - Laptop par: Right-click → Extract All
+   - Aapko ek folder milega "FitPulse-Web-Deploy"
+
+STEP 2: Browser mein jaayein
+   - URL: https://app.netlify.com/drop
+   - Yeh page open karo (Chrome / Safari / Firefox)
+
+STEP 3: Folder drag karo
+   - Apna FitPulse-Web-Deploy folder
+   - Page ke beech wala "Drag and drop your site folder" box pe
+     drag karke chhod do
+   - Phone par: button click karke folder choose karo
+
+STEP 4: Wait 30 seconds
+   - Netlify automatic upload karega
+   - Aapko URL milega jaisa: random-name-12345.netlify.app
+   - Yeh link client ke saath share kar sakte ho!
+
+DONE! Aapki site live hai. ✓
+
+================================================================
+METHOD 2 — VERCEL (Bhi easy)
+================================================================
+
+   1. https://vercel.com par signup karo (Google login)
+   2. "Add New" → "Project" click karo
+   3. ZIP file extract karke folder drag karo
+   4. Deploy click karo
+   5. URL milega: yourapp.vercel.app
+
+================================================================
+METHOD 3 — GITHUB PAGES (Free, custom URL)
+================================================================
+
+   1. https://github.com par account banao
+   2. New repository → naam: "fitpulse-app"
+   3. ZIP extract karke saari files upload karo
+   4. Settings → Pages → Source: main branch
+   5. URL milega: yourname.github.io/fitpulse-app
+
+================================================================
+METHOD 4 — HOSTINGER / GODADDY (Paid hosting)
+================================================================
+
+Agar aapne already hosting li hui hai:
+
+   1. cPanel mein login karein
+   2. File Manager open karein
+   3. public_html folder mein jaayein
+   4. Upload button → ZIP file upload karein
+   5. ZIP file ko right-click → Extract karein
+   6. Done! aapka domain.com par live ho gayi
+
+================================================================
+CUSTOM DOMAIN KAISE LAGAYEN (yourbrand.com)
+================================================================
+
+Domain kahan se kharidein (₹500-1000/saal):
+   - GoDaddy.com
+   - Namecheap.com  
+   - Hostinger.in
+
+Steps (Netlify ke liye):
+   1. Domain kharido (e.g. mygym.com)
+   2. Netlify dashboard → Site → Domain settings
+   3. "Add custom domain" → mygym.com type karo
+   4. Domain provider mein DNS settings:
+        - Type: CNAME
+        - Name: www
+        - Value: random-name-12345.netlify.app
+   5. 24 ghante mein active
+
+================================================================
+APP UPDATE KAISE KAREN
+================================================================
+
+Naya version aaye to:
+
+   NETLIFY:
+   1. Dashboard → Site → Deploys
+   2. "Drag new files" pe naya folder drop karo
+   3. Auto live ho jaayega
+
+   VERCEL:
+   - Same — naya folder drag karo
+
+   GITHUB PAGES:
+   - File replace karke commit karo
+
+================================================================
+TROUBLESHOOTING (Problems aaye to)
+================================================================
+
+PROBLEM: Page khali hai
+   SOLUTION: Browser refresh karo (Ctrl+Shift+R)
+            Cache clear karo
+
+PROBLEM: Camera kaam nahi karta
+   SOLUTION: Site HTTPS pe honi chahiye (Netlify/Vercel auto deti hain)
+            Browser mein camera permission "Allow" karo
+            Chrome / Safari use karo (best support)
+
+PROBLEM: Photos save nahi ho rahin
+   SOLUTION: Browser ka private/incognito mode close karo
+            Storage permission allow karo
+            Browser ka data quota full ho gaya — clear karo
+
+PROBLEM: Login button kaam nahi karta
+   SOLUTION: JavaScript enable karo (browser settings)
+            Browser update karo
+
+PROBLEM: Demo account kaha hai?
+   SOLUTION: Login screen par "Use demo" button hai
+            Email: demo@fitpulse.app
+            Password: demo123
+
+================================================================
+DATA / PRIVACY (Important info)
+================================================================
+
+   - Saara data USER KE PHONE / BROWSER mein store hota hai
+   - Server par KUCH NAHI jaata
+   - Agar browser cache clear karein to data delete ho jaayega
+   - Backup: Profile → "Export Data" karke JSON file save karein
+   - Restore: Profile → "Import Data" use karein
+
+================================================================
+LICENSE / OWNERSHIP
+================================================================
+
+   ✓ Aap is website ko apne business mein use kar sakte hain
+   ✓ Aap apne clients ko de sakte hain
+   ✓ Aap branding badal sakte hain
+   ✗ Source code resell nahi kar sakte (alag agreement bina)
+
+================================================================
+SUPPORT
+================================================================
+
+Koi problem aaye to humein contact karein:
+   - Whatsapp: [Aapka WhatsApp number yahan likhein]
+   - Email: [Aapka email]
+
+Free support: 1 month after delivery
+Paid support: ₹500/issue ya ₹2000/year package
+
+================================================================
+                         BEST WISHES!
+                Aapki business growth mubarak ho!
+================================================================

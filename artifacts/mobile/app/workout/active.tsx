@@ -13,10 +13,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "react-native";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
-
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+import { useLocalSearchParams } from "expo-router";
+import { LocalStore } from "@/lib/localStore";
 
 type Exercise = { name: string; sets: number; reps: number; weight: number; done: boolean };
 
@@ -66,10 +64,15 @@ export default function ActiveWorkoutScreen() {
   const colors = Colors[scheme === "dark" ? "dark" : "light"];
   const { user } = useAuth();
 
-  const [workoutName, setWorkoutName] = useState("Morning Workout");
+  const params = useLocalSearchParams<{ name?: string; category?: string; exercises?: string }>();
+  const initialExercises: Exercise[] = params.exercises
+    ? params.exercises.split(",").map(n => ({ name: n, sets: 3, reps: 12, weight: 0, done: false }))
+    : DEFAULT_EXERCISES;
+  const [workoutName, setWorkoutName] = useState(params.name || "Morning Workout");
+  const [category] = useState(params.category || "strength");
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [exercises, setExercises] = useState<Exercise[]>(DEFAULT_EXERCISES);
+  const [exercises, setExercises] = useState<Exercise[]>(initialExercises);
   const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -116,35 +119,26 @@ export default function ActiveWorkoutScreen() {
     }
 
     try {
-      await fetch(`${API_BASE}/workouts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          workoutName,
-          category: "strength",
-          duration: Math.ceil(seconds / 60),
-          caloriesBurned: estimatedCalories,
-          exercises: exercises.map(e => ({ exerciseName: e.name, sets: e.sets, reps: e.reps, weight: e.weight })),
-          completedAt: new Date().toISOString(),
-        }),
+      await LocalStore.addWorkout({
+        userId: user.id,
+        workoutName,
+        category,
+        duration: Math.ceil(seconds / 60),
+        caloriesBurned: estimatedCalories,
+        exercises: exercises.map(e => ({ exerciseName: e.name, sets: e.sets, reps: e.reps, weight: e.weight })),
+        completedAt: new Date().toISOString(),
       });
 
-      await fetch(`${API_BASE}/progress`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          date: new Date().toISOString().split("T")[0],
-          workoutsCompleted: 1,
-          caloriesBurned: estimatedCalories,
-          minutesActive: Math.ceil(seconds / 60),
-        }),
+      router.replace({
+        pathname: "/workout/complete",
+        params: {
+          duration: String(Math.ceil(seconds / 60)),
+          calories: String(estimatedCalories),
+          exercises: String(exercises.filter(e => e.done).length),
+        },
       });
-
-      router.replace("/workout/complete");
-    } catch (err) {
-      Alert.alert("Error", "Failed to save workout. Please try again.");
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to save workout.");
     } finally {
       setSaving(false);
     }

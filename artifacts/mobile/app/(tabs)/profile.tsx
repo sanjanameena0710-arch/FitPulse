@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   TextInput, Alert, Modal,
@@ -8,13 +8,10 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "react-native";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { router, useFocusEffect } from "expo-router";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
-
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+import { LocalStore, Achievement } from "@/lib/localStore";
 
 type Stats = {
   totalWorkouts: number;
@@ -24,15 +21,6 @@ type Stats = {
   longestStreak: number;
   bmi: number | null;
   bmiCategory: string | null;
-};
-
-type Achievement = {
-  id: number;
-  title: string;
-  description: string;
-  icon: string;
-  category: string;
-  unlockedAt: string;
 };
 
 const GOAL_LABELS: Record<string, string> = {
@@ -82,7 +70,6 @@ export default function ProfileScreen() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === "dark" ? "dark" : "light"];
   const { user, logout, updateUser, changeEmail, changePassword } = useAuth();
-  const queryClient = useQueryClient();
 
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -91,6 +78,7 @@ export default function ProfileScreen() {
     weight: String(user?.weight || ""),
     height: String(user?.height || ""),
   });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailData, setEmailData] = useState({ newEmail: "", password: "" });
@@ -102,39 +90,48 @@ export default function ProfileScreen() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState("");
 
-  const { data: stats } = useQuery<Stats>({
-    queryKey: ["stats", user?.id],
-    queryFn: async () => (await fetch(`${API_BASE}/users/stats?userId=${user?.id}`)).json(),
-    enabled: !!user?.id,
-  });
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
-  const { data: achievements = [] } = useQuery<Achievement[]>({
-    queryKey: ["achievements", user?.id],
-    queryFn: async () => (await fetch(`${API_BASE}/achievements?userId=${user?.id}`)).json(),
-    enabled: !!user?.id,
-  });
+  const load = useCallback(async () => {
+    if (!user?.id) return;
+    const [s, a] = await Promise.all([
+      LocalStore.getStats(user.id),
+      LocalStore.getAchievements(user.id),
+    ]);
+    setStats(s);
+    setAchievements(a);
+  }, [user?.id]);
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/users/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user?.id,
-          name: editData.name,
-          bio: editData.bio,
-          weight: editData.weight ? parseFloat(editData.weight) : undefined,
-          height: editData.height ? parseFloat(editData.height) : undefined,
-        }),
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  function startEdit() {
+    setEditData({
+      name: user?.name || "",
+      bio: user?.bio || "",
+      weight: String(user?.weight || ""),
+      height: String(user?.height || ""),
+    });
+    setEditing(true);
+  }
+
+  async function saveProfile() {
+    setSavingProfile(true);
+    try {
+      await updateUser({
+        name: editData.name,
+        bio: editData.bio,
+        weight: editData.weight ? parseFloat(editData.weight) : undefined,
+        height: editData.height ? parseFloat(editData.height) : undefined,
       });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      updateUser(data);
       setEditing(false);
-      queryClient.invalidateQueries({ queryKey: ["stats", user?.id] });
-    },
-  });
+      await load();
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to update profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
 
   function handleLogout() {
     if (Platform.OS === "web") {
@@ -150,14 +147,8 @@ export default function ProfileScreen() {
 
   async function handleChangeEmail() {
     setEmailError("");
-    if (!emailData.newEmail.includes("@")) {
-      setEmailError("Please enter a valid email address");
-      return;
-    }
-    if (!emailData.password) {
-      setEmailError("Please enter your current password");
-      return;
-    }
+    if (!emailData.newEmail.includes("@")) { setEmailError("Please enter a valid email address"); return; }
+    if (!emailData.password) { setEmailError("Please enter your current password"); return; }
     setEmailLoading(true);
     try {
       await changeEmail(emailData.newEmail, emailData.password);
@@ -200,15 +191,13 @@ export default function ProfileScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
-          <TouchableOpacity onPress={() => setEditing(!editing)}>
+          <TouchableOpacity onPress={() => editing ? setEditing(false) : startEdit()}>
             <Feather name={editing ? "x" : "edit-2"} size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {/* Profile Card */}
         <Animated.View entering={FadeInDown.delay(100).springify()}>
           <LinearGradient colors={["#6C63FF", "#9C8FFF", "#FF6B35"]} style={styles.profileCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
             <View style={styles.avatarCircle}>
@@ -241,7 +230,6 @@ export default function ProfileScreen() {
           </LinearGradient>
         </Animated.View>
 
-        {/* Stats Row */}
         <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.statsRow}>
           {[
             { label: "Workouts", value: stats?.totalWorkouts || 0 },
@@ -256,7 +244,6 @@ export default function ProfileScreen() {
           ))}
         </Animated.View>
 
-        {/* Body Stats */}
         <Animated.View entering={FadeInDown.delay(200).springify()}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Body Stats</Text>
           <View style={[styles.bodyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -303,20 +290,63 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Save when editing */}
         {editing && (
           <Animated.View entering={FadeInDown.springify()}>
-            <TouchableOpacity style={styles.saveBtn} onPress={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+            <TouchableOpacity style={styles.saveBtn} onPress={saveProfile} disabled={savingProfile}>
               <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                <Text style={styles.saveBtnText}>{updateMutation.isPending ? "Saving..." : "Save Changes"}</Text>
+                <Text style={styles.saveBtnText}>{savingProfile ? "Saving..." : "Save Changes"}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
         )}
 
-        {/* Achievements */}
+        {/* Quick Actions */}
+        <Animated.View entering={FadeInDown.delay(220).springify()}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Tools</Text>
+          <View style={styles.quickGrid}>
+            <TouchableOpacity
+              style={[styles.quickTool, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/workout/camera")}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.quickToolIcon, { backgroundColor: "#FF6B3522" }]}>
+                <Ionicons name="videocam" size={20} color="#FF6B35" />
+              </View>
+              <Text style={[styles.quickToolName, { color: colors.text }]}>Rep Counter</Text>
+              <Text style={[styles.quickToolDesc, { color: colors.textMuted }]}>AI camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickTool, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/photos")}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.quickToolIcon, { backgroundColor: "#22C55E22" }]}>
+                <Ionicons name="images" size={20} color="#22C55E" />
+              </View>
+              <Text style={[styles.quickToolName, { color: colors.text }]}>Progress Photos</Text>
+              <Text style={[styles.quickToolDesc, { color: colors.textMuted }]}>Before & after</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickTool, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/achievements")}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.quickToolIcon, { backgroundColor: "#F59E0B22" }]}>
+                <Ionicons name="trophy" size={20} color="#F59E0B" />
+              </View>
+              <Text style={[styles.quickToolName, { color: colors.text }]}>Achievements</Text>
+              <Text style={[styles.quickToolDesc, { color: colors.textMuted }]}>{achievements.length} unlocked</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
         <Animated.View entering={FadeInDown.delay(250).springify()}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Achievements</Text>
+          <View style={styles.sectionRow}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Achievements</Text>
+            <TouchableOpacity onPress={() => router.push("/achievements")}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+            </TouchableOpacity>
+          </View>
           {achievements.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="trophy-outline" size={28} color={colors.textMuted} />
@@ -335,9 +365,8 @@ export default function ProfileScreen() {
           )}
         </Animated.View>
 
-        {/* Account Settings */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Account</Text>
           <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {[
               {
@@ -351,9 +380,9 @@ export default function ProfileScreen() {
                 action: () => { setPwData({ current: "", newPw: "", confirm: "" }); setPwError(""); setShowPasswordModal(true); },
               },
               {
-                icon: "notifications-outline", label: "Push Notifications",
-                sub: "Manage alerts",
-                action: () => Alert.alert("Notifications", "Notification settings coming soon."),
+                icon: "cloud-offline-outline", label: "Offline Mode",
+                sub: "All data stored on device",
+                action: () => Alert.alert("Offline", "FitPulse works fully offline. Your data never leaves this device."),
               },
               {
                 icon: "help-circle-outline", label: "Help & Support",
@@ -371,7 +400,7 @@ export default function ProfileScreen() {
                   <View style={[styles.settingsIcon, { backgroundColor: "#6C63FF22" }]}>
                     <Ionicons name={item.icon as any} size={18} color="#6C63FF" />
                   </View>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={[styles.settingsLabel, { color: colors.text }]}>{item.label}</Text>
                     {item.sub ? <Text style={[styles.settingsSub, { color: colors.textMuted }]} numberOfLines={1}>{item.sub}</Text> : null}
                   </View>
@@ -382,7 +411,6 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Logout */}
         <Animated.View entering={FadeInDown.delay(350).springify()}>
           <TouchableOpacity style={[styles.logoutBtn, { borderColor: "#EF444444", backgroundColor: "#EF444411" }]} onPress={handleLogout} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
@@ -391,7 +419,6 @@ export default function ProfileScreen() {
         </Animated.View>
       </ScrollView>
 
-      {/* Change Email Modal */}
       <ModalCard visible={showEmailModal} onClose={() => setShowEmailModal(false)} title="Change Email" colors={colors}>
         <Text style={[styles.modalSub, { color: colors.textMuted }]}>Current: {user?.email}</Text>
         <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
@@ -425,7 +452,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ModalCard>
 
-      {/* Change Password Modal */}
       <ModalCard visible={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Change Password" colors={colors}>
         {[
           { placeholder: "Current password", key: "current", value: pwData.current },
@@ -475,6 +501,8 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 18, fontWeight: "700" },
   statLabel: { fontSize: 10, fontWeight: "400" },
   sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
+  sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  seeAll: { fontSize: 13, fontWeight: "500" },
   bodyCard: { borderRadius: 18, padding: 16, borderWidth: 1, marginBottom: 24 },
   bodyRow: { flexDirection: "row", justifyContent: "space-around" },
   bodyItem: { alignItems: "center", gap: 4 },
@@ -486,6 +514,11 @@ const styles = StyleSheet.create({
   saveBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 24 },
   saveBtnGrad: { paddingVertical: 16, alignItems: "center" },
   saveBtnText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
+  quickGrid: { flexDirection: "row", gap: 10, marginBottom: 24 },
+  quickTool: { flex: 1, borderRadius: 16, padding: 14, borderWidth: 1, gap: 6 },
+  quickToolIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  quickToolName: { fontSize: 13, fontWeight: "600" },
+  quickToolDesc: { fontSize: 11, fontWeight: "400" },
   emptyCard: { borderRadius: 18, padding: 24, borderWidth: 1, alignItems: "center", gap: 10, marginBottom: 24 },
   emptyText: { fontSize: 14, fontWeight: "400", textAlign: "center" },
   achCard: { width: 130, borderRadius: 16, padding: 16, borderWidth: 1, alignItems: "center", gap: 6 },
@@ -503,13 +536,13 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, gap: 14 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  modalTitle: { fontSize: 20, fontWeight: "700" },
-  modalClose: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  modalSub: { fontSize: 13, fontWeight: "400", marginBottom: 4 },
-  inputWrap: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
-  modalInput: { flex: 1, fontSize: 15, fontWeight: "400" },
-  errorText: { fontSize: 13, color: "#EF4444", fontWeight: "500" },
-  modalBtn: { borderRadius: 14, overflow: "hidden", marginTop: 4 },
-  modalBtnGrad: { paddingVertical: 16, alignItems: "center" },
-  modalBtnText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
+  modalTitle: { fontSize: 18, fontWeight: "700" },
+  modalClose: { padding: 4 },
+  modalSub: { fontSize: 13, fontWeight: "400", marginBottom: -4 },
+  inputWrap: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4 },
+  modalInput: { flex: 1, fontSize: 15, fontWeight: "400", paddingVertical: 12 },
+  modalBtn: { borderRadius: 12, overflow: "hidden", marginTop: 4 },
+  modalBtnGrad: { paddingVertical: 14, alignItems: "center" },
+  modalBtnText: { fontSize: 15, fontWeight: "600", color: "#FFF" },
+  errorText: { fontSize: 13, color: "#EF4444", textAlign: "center" },
 });

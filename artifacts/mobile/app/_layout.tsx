@@ -38,6 +38,9 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="workout/active" options={{ headerShown: false, presentation: "fullScreenModal" }} />
       <Stack.Screen name="workout/complete" options={{ headerShown: false, presentation: "fullScreenModal" }} />
+      <Stack.Screen name="workout/camera" options={{ headerShown: false, presentation: "fullScreenModal" }} />
+      <Stack.Screen name="achievements" options={{ headerShown: false }} />
+      <Stack.Screen name="photos" options={{ headerShown: false }} />
     </Stack>
   );
 }

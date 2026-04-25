@@ -54,3 +54,45 @@ id = "wRCu845jETBMcRFtjkpaG"
 uri = "file://APK-Build-Share-Guide.txt"
 type = "text"
 title = "APK Build & Share - Step by Step Guide (Hindi-Urdu)"
+
+[[outputs]]
+id = "0qiEAZB5s_KzS34R6Gt5D"
+uri = "file://FitPulse-App-Source.zip"
+type = "unspecified"
+title = "📱 Mobile App — Full Source Code (editable)"
+
+[[outputs]]
+id = "E4_ntM_OoYogbsD5-C6Vd"
+uri = "file://FitPulse-APK-Build.zip"
+type = "unspecified"
+title = "🤖 APK Build Package (with build instructions)"
+
+[[outputs]]
+id = "Mt92mzg-6NXa4ZhVFeWz8"
+uri = "file://FitPulse-Web-Source.zip"
+type = "unspecified"
+title = "🌐 Website — Full Source Code (editable)"
+
+[[outputs]]
+id = "kVm2g12F1iw7fBLg0-grE"
+uri = "file://FitPulse-Web-Deploy.zip"
+type = "unspecified"
+title = "🚀 Website — Ready to Deploy (drag to Netlify)"
+
+[[outputs]]
+id = "n8oWDdzd0bcJJmNSQeWT5"
+uri = "file://SELLING-GUIDE.txt"
+type = "text"
+title = "💰 Selling Guide (₹30-40K pricing & pitch)"
+
+[[outputs]]
+id = "oXADML1lSjJrTcjkIQsDm"
+uri = "file://CLIENT-WEB-DEPLOY.txt"
+type = "text"
+title = "📘 Client Web Deploy Guide"
+
+[[outputs]]
+id = "HKMnEfwTNjWtqbxqNdRRp"
+uri = "file://CLIENT-USER-GUIDE.txt"
+type = "text"
+title = "👤 Client User Guide (Hindi/Urdu)"

@@ -1,0 +1,283 @@
+================================================================
+   FITPULSE — USER GUIDE (Aapka Personal Fitness App)
+   Hindi/Urdu + English Mixed Guide
+================================================================
+
+   Welcome to FitPulse! 🎉
+   Aapka complete fitness companion — workout, water, calories,
+   progress photos, achievements — sab kuch ek hi app mein!
+
+================================================================
+SHURUAT (Getting Started)
+================================================================
+
+INSTALL KARNA:
+
+   📱 MOBILE APP (Android):
+      1. FitPulse.apk file download karein
+      2. Phone settings → Security → "Unknown sources" allow karein
+      3. APK file pe tap karein → Install
+      4. App khol ke account banayein
+
+   🌐 WEBSITE:
+      1. Apne browser mein URL kholen (jo humne diya hai)
+      2. Phone screen pe "Add to Home Screen" karein
+         (icon banega — app jaisa)
+      3. Khol ke account banayein
+
+FIRST TIME LOGIN:
+
+   Option 1 — Demo Account try karein:
+      Email: demo@fitpulse.app
+      Password: demo123
+      (Sample data already hai — explore kar lo)
+
+   Option 2 — Apna account banayein:
+      "Sign up" tap karein → Naam, Email, Password
+      Password: minimum 6 letters
+
+================================================================
+HOME SCREEN — Aaj Ki Activity
+================================================================
+
+Yeh aapka dashboard hai. Yahan dikhega:
+
+   🏠 GOOD MORNING/EVENING + Aapka Naam
+   
+   📊 TODAY'S ACTIVITY:
+      - Aaj kitne minute workout kiya
+      - Total calories burned (lifetime)
+      - Streak — kitne din continuous workout
+      - Total workouts count
+
+   💧 WATER TRACKER:
+      - 8 glass (~ 2 litre) target hai daily
+      - Har glass icon pe tap karein
+      - 8 glass complete = "Hydrated" achievement!
+
+   📈 QUICK STATS:
+      - Calories, Minutes, Workouts, Streak
+
+   🏋️ RECENT WORKOUTS:
+      - Last 3 workouts list
+
+================================================================
+WORKOUT TAB — Exercise Karen
+================================================================
+
+3 OPTIONS HAIN:
+
+   1. AI REP COUNTER CAMERA (Naya feature!)
+      Orange banner pe tap karein
+      - Camera khulega
+      - Exercise choose karein (Push-ups, Squats, etc.)
+      - Play button dabayein
+      - Camera AUTOMATIC reps count karega
+      - + button manual rep add karne ke liye
+      - "Finish & Save" → workout save ho jaayega
+
+      *** CAMERA TIPS ***
+      - Phone ko table pe rakho ya tripod pe
+      - Pura body frame mein aaye
+      - Acchi roshni ho
+      - Camera flip button se front/back switch
+
+   2. CUSTOM WORKOUT
+      "Start Custom Workout" button
+      - 4 default exercises milengi
+      - Timer start karein
+      - Har exercise complete kar ke tick karein
+      - "Finish" pe save
+
+   3. READY-MADE PLANS (8 milte hain)
+      - Upper Body Power (45 min)
+      - Leg Day Crusher (50 min)
+      - Morning Cardio (30 min)
+      - Core Crusher (25 min)
+      - Full Body HIIT (25 min)
+      - Beginner Total (30 min)
+      - Yoga Flow (35 min)
+      - Quick Burn (15 min)
+      
+      Plan pe tap → exercises list dikhega → start karein
+
+================================================================
+PROGRESS TAB — Apni Journey Dekho
+================================================================
+
+   📊 STATS CARDS:
+      - Total workouts
+      - Total calories burned
+
+   📈 ACTIVITY CHART:
+      - Last 7 days ka activity graph
+      - Konsa din workout kiya, kitne minute
+
+   💧 WATER CHART:
+      - Last 7 days mein paani kitna piya
+
+   🎯 GOALS (Apne goals banayein):
+      "+ Add" pe tap karein
+      Example goals:
+         - "Workout 5 times a week" (target: 5)
+         - "Lose 5 kg" (target: 5)
+         - "Drink 8 glasses daily"
+      Progress +1/-1 button se update karein
+      
+================================================================
+PROFILE TAB — Aap Aur Aapki Settings
+================================================================
+
+   👤 PROFILE INFO:
+      - Naam, Email, Avatar
+
+   📊 STATS:
+      - Workouts, Streak, Best, Minutes
+
+   📏 BODY STATS:
+      - Weight (kg), Height (cm)
+      - BMI calculation (auto)
+      - Category (Underweight/Normal/Overweight/Obese)
+      
+      "Edit Profile" se update karein
+
+   🛠️ QUICK TOOLS:
+      - Rep Counter (camera direct open)
+      - Progress Photos (transformation track)
+      - Achievements (unlocked badges)
+
+   ⚙️ ACCOUNT SETTINGS:
+      - Change Email
+      - Change Password
+      - Export Data (JSON backup file)
+      - Import Data (restore from backup)
+      - Reset All Data (⚠ ALL data delete)
+
+   🚪 LOG OUT (button neeche)
+
+================================================================
+NEW FEATURES IN DETAIL
+================================================================
+
+▼ ACHIEVEMENTS (Badges)
+─────────────────────────
+12 badges unlock kar sakte hain:
+
+   MILESTONES:
+      🎯 First Step — pehla workout
+      ⭐ Getting Started — 5 workouts
+      🏆 Dedicated — 10 workouts
+      💪 Warrior — 25 workouts
+      👑 Champion — 50 workouts
+
+   STREAKS:
+      🔥 On Fire — 3 din continuous
+      ⚡ Week Strong — 7 din continuous
+      🚀 Unstoppable — 30 din continuous
+
+   CALORIES:
+      🔥 Calorie Crusher — 1000 cal total
+      🌋 Inferno — 5000 cal total
+
+   WELLNESS:
+      💧 Hydrated — 8 glasses in 1 day
+      🌅 Early Bird — 7 AM se pehle workout
+
+▼ PROGRESS PHOTOS (Before/After)
+─────────────────────────
+Apni transformation dekhne ke liye:
+
+   1. Profile → Progress Photos
+   2. + button (camera icon) tap karein
+   3. Phone se photo le ya gallery se choose karein
+   4. Weight aur note add karein → Save
+   5. SIDE-BY-SIDE COMPARE:
+      - Compare button tap karein
+      - 2 photos select karein
+      - Auto compare ho jaaegi
+      - Weight change bhi dikhega!
+
+   ⚠ PRIVACY: Photos sirf aapke device pe save hain.
+            Server par nahi jaate.
+
+▼ DATA BACKUP
+─────────────────────────
+Apna data safe rakhne ke liye:
+
+   1. Profile → Export Data
+   2. JSON file download hogi
+   3. Email/Drive pe save karein
+   4. Phone change ho ya app uninstall ho:
+      - Naya install karein
+      - Profile → Import Data
+      - JSON file select karein
+      - Saara data wapas!
+
+================================================================
+TIPS — JALDI RESULT KE LIYE
+================================================================
+
+   ✓ Roz workout karo (chhota bhi chalega)
+   ✓ Streak break mat karo
+   ✓ Paani 8 glass daily
+   ✓ Hafte mein 1 baar progress photo
+   ✓ Weight track karte raho (week mein 1 baar)
+   ✓ Goals realistic banao (week ke liye)
+   ✓ Camera mode try karo — fun aur accurate
+
+================================================================
+COMMON PROBLEMS (FAQ)
+================================================================
+
+Q: App khulta nahi
+A: Phone restart karo. Phir bhi nahi to reinstall.
+
+Q: Camera ne reps count nahi kiye  
+A: + button se manually add kar lo
+   Light kam ho to brighter jagah pe karo
+   Camera flip kar ke try karo
+
+Q: Login nahi ho raha
+A: Email aur password check karo
+   "Use demo" button try karo
+
+Q: Data delete ho gaya
+A: Browser cache clear ho gaya hoga
+   Backup hai to import karo
+   Future mein weekly export karo
+
+Q: APK install nahi ho raha
+A: Settings → Security → Unknown sources allow karo
+   Old version uninstall karo phir try karo
+
+Q: Camera permission denied
+A: Phone settings → Apps → FitPulse → Permissions
+   → Camera "Allow" karo
+   App reopen karo
+
+Q: Internet ki zaroorat hai?
+A: NAHI! Sab kuch offline kaam karta hai.
+
+Q: Multiple users use kar sakte hain?
+A: Ek device pe ek hi user. Logout-Login se switch.
+
+Q: Web version aur mobile data sync hota hai?
+A: Nahi, dono separate hain. Manual export/import karen.
+
+================================================================
+SUPPORT
+================================================================
+
+Koi problem ya question ho:
+
+   📱 WhatsApp: [Seller ka number]
+   📧 Email: [Seller ka email]
+
+Free support: 1 month
+Paid support: Contact karein
+
+================================================================
+                  ENJOY YOUR FITNESS JOURNEY!
+              Stay consistent. Stay strong. 💪
+                     - Team FitPulse
+================================================================

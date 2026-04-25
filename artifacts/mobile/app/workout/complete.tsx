@@ -1,17 +1,16 @@
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue, useAnimatedStyle, withDelay, withSpring, withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQueryClient } from "@tanstack/react-query";
 
 export default function WorkoutCompleteScreen() {
   const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
+  const params = useLocalSearchParams<{ duration?: string; calories?: string; exercises?: string }>();
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const contentOpacity = useSharedValue(0);
@@ -20,10 +19,6 @@ export default function WorkoutCompleteScreen() {
     scale.value = withDelay(100, withSpring(1, { damping: 12 }));
     opacity.value = withDelay(100, withTiming(1, { duration: 400 }));
     contentOpacity.value = withDelay(500, withTiming(1, { duration: 600 }));
-
-    queryClient.invalidateQueries({ queryKey: ["workouts"] });
-    queryClient.invalidateQueries({ queryKey: ["stats"] });
-    queryClient.invalidateQueries({ queryKey: ["progress-summary"] });
   }, []);
 
   const iconStyle = useAnimatedStyle(() => ({
@@ -54,9 +49,9 @@ export default function WorkoutCompleteScreen() {
 
           <View style={styles.cards}>
             {[
-              { icon: "flame", label: "Calories Burned", value: "~280", color: "#FF6B35" },
-              { icon: "time", label: "Duration", value: "25 min", color: "#6C63FF" },
-              { icon: "trophy", label: "Streak", value: "Day 1+", color: "#F59E0B" },
+              { icon: "flame", label: "Calories Burned", value: params.calories || "0", color: "#FF6B35" },
+              { icon: "time", label: "Duration", value: `${params.duration || 0} min`, color: "#6C63FF" },
+              { icon: "trophy", label: "Exercises", value: params.exercises || "0", color: "#F59E0B" },
             ].map((c, i) => (
               <View key={i} style={styles.card}>
                 <View style={[styles.cardIcon, { backgroundColor: c.color + "22" }]}>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, TextInput,
 } from "react-native";
@@ -8,12 +8,8 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "react-native";
-import { useQuery } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
-
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "/api";
+import { LocalStore, Exercise, WorkoutPlan } from "@/lib/localStore";
 
 const CATEGORIES = ["All", "Strength", "Cardio", "HIIT", "Flexibility", "Yoga"];
 
@@ -23,28 +19,6 @@ const EXERCISE_ICONS: Record<string, string> = {
   flexibility: "yoga",
   yoga: "leaf",
   hiit: "fire",
-};
-
-type Exercise = {
-  id: number;
-  name: string;
-  category: string;
-  muscleGroup: string;
-  difficulty: string;
-  description: string;
-  caloriesPerMinute: number;
-  equipment: string;
-};
-
-type WorkoutPlan = {
-  id: number;
-  name: string;
-  description: string;
-  level: string;
-  duration: number;
-  category: string;
-  isPremium: boolean;
-  exercises: string[];
 };
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -60,16 +34,15 @@ export default function WorkoutScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"plans" | "exercises">("plans");
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [plans, setPlans] = useState<WorkoutPlan[]>([]);
 
-  const { data: exercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["exercises"],
-    queryFn: async () => (await fetch(`${API_BASE}/exercises`)).json(),
-  });
-
-  const { data: plans = [] } = useQuery<WorkoutPlan[]>({
-    queryKey: ["workout-plans"],
-    queryFn: async () => (await fetch(`${API_BASE}/workout-plans`)).json(),
-  });
+  useEffect(() => {
+    (async () => {
+      setExercises(await LocalStore.getExercises());
+      setPlans(await LocalStore.getPlans());
+    })();
+  }, []);
 
   const filteredExercises = exercises.filter(e => {
     const matchCat = selectedCategory === "All" || e.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -91,16 +64,49 @@ export default function WorkoutScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Workouts</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.cameraBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/workout/camera")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="camera" size={18} color="#FF6B35" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.startBtn}
+              onPress={() => router.push("/workout/active")}
+            >
+              <LinearGradient colors={["#6C63FF", "#FF6B35"]} style={styles.startBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                <Ionicons name="play" size={16} color="#FFF" />
+                <Text style={styles.startBtnText}>Start</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Camera Detect Banner */}
+        <Animated.View entering={FadeInDown.springify()}>
           <TouchableOpacity
-            style={styles.startBtn}
-            onPress={() => router.push("/workout/active")}
+            activeOpacity={0.9}
+            onPress={() => router.push("/workout/camera")}
           >
-            <LinearGradient colors={["#6C63FF", "#FF6B35"]} style={styles.startBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Ionicons name="play" size={16} color="#FFF" />
-              <Text style={styles.startBtnText}>Start</Text>
+            <LinearGradient
+              colors={["#FF6B35", "#F59E0B"]}
+              style={styles.cameraBanner}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.cameraBannerIcon}>
+                <Ionicons name="videocam" size={26} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cameraBannerTitle}>AI Camera Rep Counter</Text>
+                <Text style={styles.cameraBannerSub}>Use your camera to auto-count reps & track form</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.9)" />
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Tabs */}
         <View style={[styles.tabs, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -137,7 +143,7 @@ export default function WorkoutScreen() {
               {CATEGORIES.map(cat => (
                 <TouchableOpacity
                   key={cat}
-                  style={[styles.catChip, selectedCategory === cat && styles.catChipActive, { borderColor: colors.border, backgroundColor: colors.card }]}
+                  style={[styles.catChip, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setSelectedCategory(cat)}
                 >
                   {selectedCategory === cat && <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={StyleSheet.absoluteFill} borderRadius={20} />}
@@ -148,10 +154,11 @@ export default function WorkoutScreen() {
 
             <View style={{ gap: 10 }}>
               {filteredExercises.map((ex, i) => (
-                <Animated.View key={ex.id} entering={FadeInDown.delay(i * 50).springify()}>
+                <Animated.View key={ex.id} entering={FadeInDown.delay(i * 30).springify()}>
                   <TouchableOpacity
                     style={[styles.exerciseCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                     activeOpacity={0.8}
+                    onPress={() => router.push({ pathname: "/workout/active", params: { name: ex.name, category: ex.category } })}
                   >
                     <View style={[styles.exIcon, { backgroundColor: "#6C63FF22" }]}>
                       <MaterialCommunityIcons name={EXERCISE_ICONS[ex.category] as any || "weight-lifter"} size={22} color="#6C63FF" />
@@ -176,10 +183,10 @@ export default function WorkoutScreen() {
         {activeTab === "plans" && (
           <View style={{ gap: 14 }}>
             {plans.map((plan, i) => (
-              <Animated.View key={plan.id} entering={FadeInDown.delay(i * 80).springify()}>
+              <Animated.View key={plan.id} entering={FadeInDown.delay(i * 60).springify()}>
                 <TouchableOpacity
                   style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => router.push("/workout/active")}
+                  onPress={() => router.push({ pathname: "/workout/active", params: { name: plan.name, category: plan.category, exercises: plan.exercises.join(",") } })}
                   activeOpacity={0.85}
                 >
                   <View style={styles.planHeader}>
@@ -191,7 +198,7 @@ export default function WorkoutScreen() {
                         {plan.isPremium && (
                           <LinearGradient colors={["#F59E0B", "#FF6B35"]} style={styles.premiumBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                             <Ionicons name="star" size={10} color="#FFF" />
-                            <Text style={styles.premiumText}>Premium</Text>
+                            <Text style={styles.premiumText}>Pro</Text>
                           </LinearGradient>
                         )}
                       </View>
@@ -216,15 +223,13 @@ export default function WorkoutScreen() {
                   </View>
 
                   <LinearGradient
-                    colors={plan.isPremium ? ["#F59E0B22", "#FF6B3511"] : ["#6C63FF22", "#9C8FFF11"]}
+                    colors={["#6C63FF22", "#9C8FFF11"]}
                     style={styles.planStartBtn}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
-                    <Text style={[styles.planStartText, { color: plan.isPremium ? "#F59E0B" : "#6C63FF" }]}>
-                      {plan.isPremium ? "Upgrade to Start" : "Start Plan"}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={16} color={plan.isPremium ? "#F59E0B" : "#6C63FF"} />
+                    <Text style={[styles.planStartText, { color: "#6C63FF" }]}>Start Plan</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#6C63FF" />
                   </LinearGradient>
                 </TouchableOpacity>
               </Animated.View>
@@ -241,9 +246,15 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 20 },
   title: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  cameraBtn: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   startBtn: { borderRadius: 12, overflow: "hidden" },
   startBtnGrad: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, gap: 6 },
   startBtnText: { fontSize: 14, fontWeight: "600", color: "#FFF" },
+  cameraBanner: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 18, marginBottom: 18, shadowColor: "#FF6B35", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  cameraBannerIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  cameraBannerTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
+  cameraBannerSub: { fontSize: 12, fontWeight: "400", color: "rgba(255,255,255,0.85)", marginTop: 2 },
   tabs: { flexDirection: "row", borderRadius: 14, padding: 4, marginBottom: 16, borderWidth: 1 },
   tab: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center", overflow: "hidden" },
   tabActive: {},
@@ -252,7 +263,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15, fontWeight: "400" },
   categories: { marginHorizontal: -20, paddingLeft: 20, marginBottom: 16 },
   catChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, overflow: "hidden" },
-  catChipActive: {},
   catText: { fontSize: 13, fontWeight: "500" },
   exerciseCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 14, borderWidth: 1 },
   exIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -271,7 +281,7 @@ const styles = StyleSheet.create({
   premiumText: { fontSize: 11, fontWeight: "600", color: "#FFF" },
   planName: { fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
   planDesc: { fontSize: 13, fontWeight: "400", marginTop: 4, lineHeight: 19 },
-  planDetails: { flexDirection: "row", gap: 16 },
+  planDetails: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
   planDetail: { flexDirection: "row", alignItems: "center", gap: 4 },
   planDetailText: { fontSize: 12, fontWeight: "400" },
   planStartBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 12, paddingVertical: 12, gap: 6 },
