@@ -33,6 +33,62 @@ function PulseDot({ active }: { active: boolean }) {
   return <Animated.View style={[styles.recordDot, style]} />;
 }
 
+function WebCameraPreview({ facing }: { facing: CameraType }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    let cancelled = false;
+    async function openCamera() {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera is not supported in this browser.");
+        }
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing === "front" ? "user" : { exact: "environment" } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+      } catch (err: any) {
+        setError(err?.message || "Camera permission was denied.");
+      }
+    }
+    openCamera();
+    return () => {
+      cancelled = true;
+      stream?.getTracks().forEach(track => track.stop());
+    };
+  }, [facing]);
+
+  if (error) {
+    return (
+      <View style={styles.webPlaceholder}>
+        <MaterialCommunityIcons name="camera-off" size={56} color="rgba(255,255,255,0.45)" />
+        <Text style={styles.webPlaceholderText}>{error}</Text>
+        <Text style={styles.webPlaceholderSub}>Allow camera access and use HTTPS to enable the live preview.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      muted
+      playsInline
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+    />
+  );
+}
+
 export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -78,6 +134,11 @@ export default function CameraScreen() {
     setReps(0);
     setSeconds(0);
     setShowPicker(false);
+  }
+
+  function cancelSession() {
+    pauseTracking();
+    router.replace("/(tabs)/workout");
   }
 
   async function finishSession() {
@@ -151,14 +212,10 @@ export default function CameraScreen() {
     <View style={[styles.container, { backgroundColor: "#000" }]}>
       {Platform.OS !== "web" ? (
         <CameraView style={StyleSheet.absoluteFill} facing={facing} />
-      ) : (
-        <LinearGradient colors={["#1A1A2E", "#0A0A1A"]} style={StyleSheet.absoluteFill}>
-          <View style={styles.webPlaceholder}>
-            <MaterialCommunityIcons name="camera-off" size={56} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.webPlaceholderText}>Camera preview only available on mobile device</Text>
-            <Text style={styles.webPlaceholderSub}>Rep counter still works — use manual mode</Text>
-          </View>
-        </LinearGradient>
+       ) : (
+        <View style={StyleSheet.absoluteFill}>
+          <WebCameraPreview facing={facing} />
+        </View>
       )}
 
       {/* Dark overlay */}
@@ -166,7 +223,7 @@ export default function CameraScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={cancelSession} style={styles.headerBtn} accessibilityLabel="Cancel camera session">
           <Ionicons name="close" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -250,7 +307,7 @@ export default function CameraScreen() {
           </View>
         </TouchableOpacity>
 
-           <Text style={styles.hint}>Camera preview is live · tap + to confirm each completed rep</Text>
+            <Text style={styles.hint}>Live camera preview · tap + to confirm each completed rep</Text>
       </View>
 
       {/* Exercise Picker */}

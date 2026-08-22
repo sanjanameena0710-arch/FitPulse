@@ -158,22 +158,13 @@ export default function ActiveWorkoutScreen() {
     }
   }
 
-  function confirmFinish() {
-    Alert.alert("Finish Workout?", `You've completed ${completedCount}/${exercises.length} exercises.`, [
-      { text: "Keep Going", style: "cancel" },
-      { text: "Finish", style: "default", onPress: finishWorkout },
-    ]);
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: "#0A0A1A" }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 12) }]}>
         <TouchableOpacity
-          onPress={() => Alert.alert("Cancel Workout?", "Your progress will not be saved.", [
-            { text: "Stay", style: "cancel" },
-            { text: "Cancel Workout", style: "destructive", onPress: cancelWorkout },
-          ])}
+          onPress={cancelWorkout}
+          accessibilityLabel="Cancel workout"
         >
           <Ionicons name="close" size={26} color="rgba(255,255,255,0.7)" />
         </TouchableOpacity>
@@ -188,7 +179,8 @@ export default function ActiveWorkoutScreen() {
 
         <TouchableOpacity
           style={[styles.finishBtn, saving && { opacity: 0.5 }]}
-          onPress={confirmFinish}
+          onPress={finishWorkout}
+          accessibilityLabel="Finish workout"
           disabled={saving}
         >
           <LinearGradient colors={["#22C55E", "#16A34A"]} style={styles.finishBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
