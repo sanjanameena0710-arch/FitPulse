@@ -6,11 +6,13 @@ import workoutsRouter from "./workouts.js";
 import exercisesRouter, { plansRouter } from "./exercises.js";
 import progressRouter from "./progress.js";
 import goalsRouter, { achievementsRouter } from "./goals.js";
+import { requireAuth } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
 router.use(healthRouter);
 router.use("/auth", authRouter);
+router.use(requireAuth);
 router.use("/users", usersRouter);
 router.use("/workouts", workoutsRouter);
 router.use("/workout-plans", plansRouter);

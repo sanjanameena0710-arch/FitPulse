@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions, CameraType } from "expo-camera";
 import { useAuth } from "@/context/AuthContext";
 import { LocalStore } from "@/lib/localStore";
+import { apiRequest, ApiError } from "@/lib/api";
 
 const EXERCISE_OPTIONS = [
   { name: "Push-ups", calPerRep: 0.5, target: 15, color: "#6C63FF" },
@@ -154,7 +155,7 @@ export default function CameraScreen() {
     if (!user?.id) return;
     const calories = Math.round(reps * exercise.calPerRep);
     try {
-      await LocalStore.addWorkout({
+      const workoutPayload = {
         userId: user.id,
         workoutName: `${exercise.name} (Camera)`,
         category: "strength",
@@ -162,7 +163,13 @@ export default function CameraScreen() {
         caloriesBurned: calories,
         exercises: [{ exerciseName: exercise.name, sets: 1, reps, weight: 0 }],
         completedAt: new Date().toISOString(),
-      });
+      };
+      try {
+        await apiRequest("/workouts", { method: "POST", body: JSON.stringify(workoutPayload) });
+      } catch (error) {
+        if (!(error instanceof ApiError) || !error.offline) throw error;
+        await LocalStore.addWorkout(workoutPayload);
+      }
       setShowSummary(false);
       router.replace({
         pathname: "/workout/complete",

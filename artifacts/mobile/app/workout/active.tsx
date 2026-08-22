@@ -15,6 +15,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { useLocalSearchParams } from "expo-router";
 import { LocalStore, SEED_EXERCISES } from "@/lib/localStore";
+import { apiRequest, ApiError } from "@/lib/api";
 
 type Exercise = { name: string; sets: number; reps: number; weight: number; done: boolean };
 
@@ -133,20 +134,27 @@ export default function ActiveWorkoutScreen() {
     }
 
     try {
-      await LocalStore.addWorkout({
+      const completedAt = new Date().toISOString();
+      const workoutPayload = {
         userId: user.id,
         workoutName,
         category,
-        duration: Math.ceil(seconds / 60),
+        duration: Math.max(1, Math.ceil(seconds / 60)),
         caloriesBurned: estimatedCalories,
-        exercises: exercises.map(e => ({ exerciseName: e.name, sets: e.sets, reps: e.reps, weight: e.weight })),
-        completedAt: new Date().toISOString(),
-      });
+        exercises: exercises.map(e => ({ exerciseName: e.name, sets: e.sets, reps: e.reps, weight: e.weight, completed: e.done })),
+        completedAt,
+      };
+      try {
+        await apiRequest("/workouts", { method: "POST", body: JSON.stringify(workoutPayload) });
+      } catch (error) {
+        if (!(error instanceof ApiError) || !error.offline) throw error;
+        await LocalStore.addWorkout(workoutPayload);
+      }
 
       router.replace({
         pathname: "/workout/complete",
         params: {
-          duration: String(Math.ceil(seconds / 60)),
+          duration: String(Math.max(1, Math.ceil(seconds / 60))),
           calories: String(estimatedCalories),
           exercises: String(exercises.filter(e => e.done).length),
         },

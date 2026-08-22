@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import FitPulseLogo from "@/components/FitPulseLogo";
 import { LocalStore, Workout } from "@/lib/localStore";
+import { apiRequest, ApiError } from "@/lib/api";
 
 const QUICK_WORKOUTS = [
   { name: "Morning HIIT", duration: "20 min", calories: 280, color: "#FF6B35", icon: "flame", category: "hiit" },
@@ -43,11 +44,19 @@ export default function HomeScreen() {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [s, w, water] = await Promise.all([
-      LocalStore.getStats(user.id),
-      LocalStore.getWorkouts(user.id, 5),
-      LocalStore.getWaterToday(user.id),
-    ]);
+    let s: Stats;
+    let w: Workout[];
+    try {
+      const remoteStats = await apiRequest<Stats>(`/users/stats?userId=${user.id}`);
+      const remoteWorkouts = await apiRequest<Workout[]>(`/workouts?userId=${user.id}&limit=5`);
+      s = remoteStats;
+      w = remoteWorkouts;
+    } catch (error) {
+      if (!(error instanceof ApiError) || !error.offline) throw error;
+      s = await LocalStore.getStats(user.id);
+      w = await LocalStore.getWorkouts(user.id, 5);
+    }
+    const water = await LocalStore.getWaterToday(user.id);
     setStats(s);
     setRecentWorkouts(w);
     setWaterToday(water);

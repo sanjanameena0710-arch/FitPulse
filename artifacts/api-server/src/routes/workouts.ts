@@ -30,7 +30,7 @@ const EXERCISES = [
 
 router.get("/", async (req, res) => {
   try {
-    const userId = parseInt(req.query.userId as string);
+    const userId = req.authUserId;
     const limit = parseInt(req.query.limit as string) || 20;
     if (!userId) return res.status(400).json({ error: "userId required" });
 
@@ -48,13 +48,13 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { userId, workoutName, category, duration, caloriesBurned, exercises, notes, completedAt } = req.body;
+    const { workoutName, category, duration, caloriesBurned, exercises, notes, completedAt } = req.body;
     if (!userId || !workoutName || !duration || caloriesBurned === undefined) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     const [workout] = await db.insert(workoutsTable).values({
-      userId, workoutName, category, duration, caloriesBurned, exercises: exercises || [],
+      userId: req.authUserId!, workoutName, category, duration, caloriesBurned, exercises: exercises || [],
       notes, completedAt: completedAt ? new Date(completedAt) : new Date(),
     }).returning();
 

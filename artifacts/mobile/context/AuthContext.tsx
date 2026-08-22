@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { LocalStore, StoredUser } from "@/lib/localStore";
+import { apiRequest, ApiError, setApiToken, getApiToken } from "@/lib/api";
 
 export type User = {
   id: number;
@@ -42,6 +44,8 @@ function toUser(u: StoredUser): User {
   return rest;
 }
 
+type AuthResponse = { token: string; user: User };
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -55,6 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function init() {
     try {
       await LocalStore.ensureSeeded();
+      const token = await getApiToken();
+      const remoteUser = await AsyncStorage.getItem("fitpulse_remote_user");
+      if (token && remoteUser) {
+        setUser(JSON.parse(remoteUser) as User);
+        return;
+      }
       const current = await LocalStore.getCurrentUser();
       if (current) setUser(toUser(current));
     } catch (err) {
@@ -65,27 +75,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(email: string, password: string) {
-    const u = await LocalStore.login(email, password);
-    setUser(toUser(u));
+    try {
+      const response = await apiRequest<AuthResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      });
+      await setApiToken(response.token);
+      await AsyncStorage.setItem("fitpulse_remote_user", JSON.stringify(response.user));
+      setUser(response.user);
+    } catch (error) {
+      if (!(error instanceof ApiError) || !error.offline) throw error;
+      const u = await LocalStore.login(email, password);
+      setUser(toUser(u));
+    }
     router.replace("/(tabs)");
   }
 
   async function register(data: RegisterData) {
-    const u = await LocalStore.register(data);
-    setUser(toUser(u));
+    try {
+      const response = await apiRequest<AuthResponse>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      await setApiToken(response.token);
+      await AsyncStorage.setItem("fitpulse_remote_user", JSON.stringify(response.user));
+      setUser(response.user);
+    } catch (error) {
+      if (!(error instanceof ApiError) || !error.offline) throw error;
+      const u = await LocalStore.register(data);
+      setUser(toUser(u));
+    }
     router.replace("/(tabs)");
   }
 
   async function logout() {
     await LocalStore.logout();
+    await setApiToken(null);
+    await AsyncStorage.removeItem("fitpulse_remote_user");
     setUser(null);
     router.replace("/(auth)/landing");
   }
 
   async function updateUser(data: Partial<User>) {
     if (!user) return;
-    const updated = await LocalStore.updateUser(user.id, data);
-    setUser(toUser(updated));
+    try {
+      const updated = await apiRequest<User>("/users/profile", {
+        method: "PUT",
+        body: JSON.stringify({ userId: user.id, ...data }),
+      });
+      await AsyncStorage.setItem("fitpulse_remote_user", JSON.stringify(updated));
+      setUser(updated);
+    } catch (error) {
+      if (!(error instanceof ApiError) || !error.offline) throw error;
+      const updated = await LocalStore.updateUser(user.id, data);
+      setUser(toUser(updated));
+    }
   }
 
   async function changeEmail(newEmail: string, password: string) {
@@ -96,7 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function changePassword(currentPassword: string, newPassword: string) {
     if (!user) throw new Error("Not logged in");
-    await LocalStore.changePassword(user.id, currentPassword, newPassword);
+    try {
+      await apiRequest("/users/change-password", {
+        method: "PUT",
+        body: JSON.stringify({ userId: user.id, currentPassword, newPassword }),
+      });
+    } catch (error) {
+      if (!(error instanceof ApiError) || !error.offline) throw error;
+      await LocalStore.changePassword(user.id, currentPassword, newPassword);
+    }
   }
 
   return (

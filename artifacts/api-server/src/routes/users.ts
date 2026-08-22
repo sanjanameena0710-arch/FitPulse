@@ -8,7 +8,7 @@ const router = Router();
 
 router.get("/profile", async (req, res) => {
   try {
-    const userId = parseInt(req.query.userId as string);
+    const userId = req.authUserId;
     if (!userId) return res.status(400).json({ error: "userId required" });
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
@@ -27,7 +27,8 @@ router.get("/profile", async (req, res) => {
 
 router.put("/profile", async (req, res) => {
   try {
-    const { userId, name, age, weight, height, activityLevel, fitnessGoal, bio } = req.body;
+    const { name, age, weight, height, activityLevel, fitnessGoal, bio } = req.body;
+    const userId = req.authUserId;
     if (!userId) return res.status(400).json({ error: "userId required" });
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -53,7 +54,7 @@ router.put("/profile", async (req, res) => {
 
 router.get("/stats", async (req, res) => {
   try {
-    const userId = parseInt(req.query.userId as string);
+    const userId = req.authUserId;
     if (!userId) return res.status(400).json({ error: "userId required" });
 
     const workouts = await db.select().from(workoutsTable).where(eq(workoutsTable.userId, userId));
@@ -117,7 +118,8 @@ router.get("/stats", async (req, res) => {
 
 router.put("/change-email", async (req, res) => {
   try {
-    const { userId, newEmail, password } = req.body;
+    const { newEmail, password } = req.body;
+    const userId = req.authUserId;
     if (!userId || !newEmail || !password) {
       return res.status(400).json({ error: "userId, newEmail and password required" });
     }
@@ -140,7 +142,8 @@ router.put("/change-email", async (req, res) => {
 
 router.put("/change-password", async (req, res) => {
   try {
-    const { userId, currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.authUserId;
     if (!userId || !currentPassword || !newPassword) {
       return res.status(400).json({ error: "userId, currentPassword and newPassword required" });
     }
