@@ -8,15 +8,12 @@ const getBaseUrl = () => {
 };
 
 export function useApi() {
-  const { token } = useAuth();
-
   async function apiFetch(path: string, options: RequestInit = {}) {
     const url = `${getBaseUrl()}${path}`;
     const res = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });

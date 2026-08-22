@@ -162,7 +162,7 @@ export default function RegisterScreen() {
                     activeOpacity={0.8}
                   >
                     {selectedGoal === goal.id && (
-                      <LinearGradient colors={[goal.color + "22", goal.color + "11"]} style={StyleSheet.absoluteFill} borderRadius={18} />
+                      <LinearGradient colors={[goal.color + "22", goal.color + "11"]} style={[StyleSheet.absoluteFill, { borderRadius: 18 }]} />
                     )}
                     <View style={[styles.goalIcon, { backgroundColor: goal.color + "22" }]}>
                       <Ionicons name={goal.icon as any} size={26} color={goal.color} />

@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { LocalStore } from "@/lib/localStore";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -17,6 +18,11 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [resetVisible, setResetVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetError, setResetError] = useState("");
 
   function validate() {
     const errs: Record<string, string> = {};
@@ -37,6 +43,34 @@ export default function LoginScreen() {
       Alert.alert("Login Failed", err.message || "Please check your credentials");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    setResetError("");
+    if (!/\S+@\S+\.\S+/.test(resetEmail)) {
+      setResetError("Enter the email used for this offline account");
+      return;
+    }
+    if (resetPassword.length < 6) {
+      setResetError("Password must be at least 6 characters");
+      return;
+    }
+    if (resetPassword !== resetConfirm) {
+      setResetError("Passwords do not match");
+      return;
+    }
+    try {
+      await LocalStore.resetPassword(resetEmail, resetPassword);
+      setResetVisible(false);
+      setEmail(resetEmail.trim().toLowerCase());
+      setPassword("");
+      setResetEmail("");
+      setResetPassword("");
+      setResetConfirm("");
+      Alert.alert("Password updated", "Your offline password has been changed. Sign in with the new password.");
+    } catch (err: any) {
+      setResetError(err.message || "Unable to reset password");
     }
   }
 
@@ -99,7 +133,7 @@ export default function LoginScreen() {
               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
-            <TouchableOpacity style={styles.forgotBtn} onPress={() => Alert.alert("Reset Password", "A reset link will be sent to your email.")}>
+            <TouchableOpacity style={styles.forgotBtn} onPress={() => { setResetError(""); setResetVisible(true); }}>
               <Text style={styles.forgotText}>Forgot password?</Text>
             </TouchableOpacity>
 
@@ -141,6 +175,29 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={resetVisible} transparent animationType="slide" onRequestClose={() => setResetVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.resetCard}>
+            <View style={styles.resetHeader}>
+              <Text style={styles.resetTitle}>Reset offline password</Text>
+              <TouchableOpacity onPress={() => setResetVisible(false)}>
+                <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.resetSub}>This works on this device only. Enter your account email and choose a new password.</Text>
+            <TextInput style={styles.resetInput} placeholder="Account email" placeholderTextColor="rgba(255,255,255,0.35)" value={resetEmail} onChangeText={setResetEmail} autoCapitalize="none" keyboardType="email-address" />
+            <TextInput style={styles.resetInput} placeholder="New password" placeholderTextColor="rgba(255,255,255,0.35)" value={resetPassword} onChangeText={setResetPassword} secureTextEntry />
+            <TextInput style={styles.resetInput} placeholder="Confirm new password" placeholderTextColor="rgba(255,255,255,0.35)" value={resetConfirm} onChangeText={setResetConfirm} secureTextEntry />
+            {resetError ? <Text style={styles.resetError}>{resetError}</Text> : null}
+            <TouchableOpacity style={styles.resetBtn} onPress={handleResetPassword}>
+              <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.loginBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                <Text style={styles.loginBtnText}>Update Password</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -177,4 +234,12 @@ const styles = StyleSheet.create({
   footer: { flexDirection: "row", justifyContent: "center", marginTop: "auto", paddingTop: 24 },
   footerText: { fontSize: 14, fontWeight: "400", color: "rgba(255,255,255,0.4)" },
   footerLink: { fontSize: 14, fontWeight: "600", color: "#6C63FF" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", justifyContent: "flex-end" },
+  resetCard: { backgroundColor: "#1A1A2E", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, gap: 12 },
+  resetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  resetTitle: { fontSize: 20, fontWeight: "700", color: "#FFF" },
+  resetSub: { fontSize: 13, lineHeight: 19, color: "rgba(255,255,255,0.55)", marginBottom: 4 },
+  resetInput: { backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: "#FFF", fontSize: 15 },
+  resetError: { fontSize: 13, color: "#EF4444", textAlign: "center" },
+  resetBtn: { borderRadius: 14, overflow: "hidden", marginTop: 4 },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform,
-  TextInput, Alert,
+  TextInput, Alert, Modal, Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -14,7 +14,7 @@ import { useColorScheme } from "react-native";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { useLocalSearchParams } from "expo-router";
-import { LocalStore } from "@/lib/localStore";
+import { LocalStore, SEED_EXERCISES } from "@/lib/localStore";
 
 type Exercise = { name: string; sets: number; reps: number; weight: number; done: boolean };
 
@@ -70,9 +70,10 @@ export default function ActiveWorkoutScreen() {
     : DEFAULT_EXERCISES;
   const [workoutName, setWorkoutName] = useState(params.name || "Morning Workout");
   const [category] = useState(params.category || "strength");
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(true);
   const [seconds, setSeconds] = useState(0);
   const [exercises, setExercises] = useState<Exercise[]>(initialExercises);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -94,7 +95,25 @@ export default function ActiveWorkoutScreen() {
   }
 
   function addExercise() {
-    setExercises(prev => [...prev, { name: "New Exercise", sets: 3, reps: 10, weight: 0, done: false }]);
+    setPickerOpen(true);
+  }
+
+  function chooseExercise(name: string) {
+    if (exercises.some(ex => ex.name === name)) {
+      setPickerOpen(false);
+      return;
+    }
+    setExercises(prev => [...prev, { name, sets: 3, reps: 12, weight: 0, done: false }]);
+    setPickerOpen(false);
+  }
+
+  function cancelWorkout() {
+    setIsRunning(false);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    router.replace("/(tabs)/workout");
   }
 
   function removeExercise(idx: number) {
@@ -107,11 +126,6 @@ export default function ActiveWorkoutScreen() {
 
   async function finishWorkout() {
     if (!user?.id) return;
-    if (seconds < 30) {
-      Alert.alert("Too Short", "Complete at least 30 seconds of workout to save.");
-      return;
-    }
-
     setSaving(true);
     if (isRunning) {
       setIsRunning(false);
@@ -156,9 +170,9 @@ export default function ActiveWorkoutScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 12) }]}>
         <TouchableOpacity
-          onPress={() => Alert.alert("Quit Workout?", "Your progress will not be saved.", [
+          onPress={() => Alert.alert("Cancel Workout?", "Your progress will not be saved.", [
             { text: "Stay", style: "cancel" },
-            { text: "Quit", style: "destructive", onPress: () => router.back() },
+            { text: "Cancel Workout", style: "destructive", onPress: cancelWorkout },
           ])}
         >
           <Ionicons name="close" size={26} color="rgba(255,255,255,0.7)" />
@@ -270,6 +284,43 @@ export default function ActiveWorkoutScreen() {
           <Text style={styles.addExText}>Add Exercise</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.pickerCard}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Add Exercise</Text>
+              <TouchableOpacity onPress={() => setPickerOpen(false)} accessibilityLabel="Close exercise picker">
+                <Ionicons name="close" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.pickerList}>
+              {SEED_EXERCISES.map(ex => {
+                const alreadyAdded = exercises.some(item => item.name === ex.name);
+                return (
+                  <Pressable
+                    key={ex.id}
+                    style={[styles.pickerRow, alreadyAdded && styles.pickerRowDisabled]}
+                    onPress={() => chooseExercise(ex.name)}
+                    disabled={alreadyAdded}
+                  >
+                    <View style={styles.pickerIcon}>
+                      <MaterialCommunityIcons name="dumbbell" size={18} color="#9C8FFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.pickerName}>{ex.name}</Text>
+                      <Text style={styles.pickerMeta}>{ex.muscleGroup} · {ex.equipment}</Text>
+                    </View>
+                    {alreadyAdded
+                      ? <Ionicons name="checkmark-circle" size={22} color="#22C55E" />
+                      : <Ionicons name="add-circle-outline" size={22} color="#9C8FFF" />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -311,4 +362,14 @@ const styles = StyleSheet.create({
   exMeta: { fontSize: 12, fontWeight: "400", color: "rgba(255,255,255,0.4)", marginTop: 2 },
   addExBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 14, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)", borderStyle: "dashed" },
   addExText: { fontSize: 14, fontWeight: "500", color: "rgba(108,99,255,0.8)" },
+  modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.65)" },
+  pickerCard: { maxHeight: "82%", backgroundColor: "#17152D", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 },
+  pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  pickerTitle: { color: "#FFF", fontSize: 20, fontWeight: "700" },
+  pickerList: { flexGrow: 0 },
+  pickerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
+  pickerRowDisabled: { opacity: 0.55 },
+  pickerIcon: { width: 38, height: 38, borderRadius: 11, backgroundColor: "rgba(108,99,255,0.16)", alignItems: "center", justifyContent: "center" },
+  pickerName: { color: "#FFF", fontSize: 15, fontWeight: "600" },
+  pickerMeta: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 },
 });

@@ -45,27 +45,21 @@ export default function CameraScreen() {
   const [tracking, setTracking] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const repIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      if (repIntervalRef.current) clearInterval(repIntervalRef.current);
     };
   }, []);
 
   function startTracking() {
     setTracking(true);
     intervalRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    // Simulated rep detection: fast, regular cadence
-    const intervalMs = exercise.name === "Jumping Jacks" ? 800 : exercise.name === "Burpees" ? 3000 : exercise.name === "Squats" ? 1800 : 1500;
-    repIntervalRef.current = setInterval(() => setReps(r => r + 1), intervalMs);
   }
 
   function pauseTracking() {
     setTracking(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
-    if (repIntervalRef.current) clearInterval(repIntervalRef.current);
   }
 
   function manualAddRep() {
@@ -256,7 +250,7 @@ export default function CameraScreen() {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.hint}>+ button = manual add  ·  AI counts automatically when active</Text>
+           <Text style={styles.hint}>Camera preview is live · tap + to confirm each completed rep</Text>
       </View>
 
       {/* Exercise Picker */}

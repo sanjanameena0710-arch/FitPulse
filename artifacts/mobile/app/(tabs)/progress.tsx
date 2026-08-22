@@ -136,7 +136,7 @@ export default function ProgressScreen() {
                   style={styles.periodTab}
                   onPress={() => setPeriod(p)}
                 >
-                  {period === p && <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={StyleSheet.absoluteFill} borderRadius={8} />}
+                  {period === p && <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={[StyleSheet.absoluteFill, { borderRadius: 8 }]} />}
                   <Text style={[styles.periodTabText, { color: period === p ? "#FFF" : colors.textMuted }]}>
                     {p === "week" ? "Week" : "Month"}
                   </Text>

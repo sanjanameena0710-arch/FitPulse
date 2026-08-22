@@ -100,8 +100,8 @@ export default function WorkoutScreen() {
                 <Ionicons name="videocam" size={26} color="#FFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cameraBannerTitle}>AI Camera Rep Counter</Text>
-                <Text style={styles.cameraBannerSub}>Use your camera to auto-count reps & track form</Text>
+                <Text style={styles.cameraBannerTitle}>Camera Rep Counter</Text>
+                <Text style={styles.cameraBannerSub}>Use the live camera and confirm each rep as you train</Text>
               </View>
               <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.9)" />
             </LinearGradient>
@@ -117,7 +117,7 @@ export default function WorkoutScreen() {
               onPress={() => setActiveTab(tab)}
             >
               {activeTab === tab && (
-                <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={StyleSheet.absoluteFill} borderRadius={10} />
+                <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={[StyleSheet.absoluteFill, { borderRadius: 10 }]} />
               )}
               <Text style={[styles.tabText, { color: activeTab === tab ? "#FFF" : colors.textSecondary }]}>
                 {tab === "plans" ? "Workout Plans" : "Exercises"}
@@ -146,7 +146,7 @@ export default function WorkoutScreen() {
                   style={[styles.catChip, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setSelectedCategory(cat)}
                 >
-                  {selectedCategory === cat && <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={StyleSheet.absoluteFill} borderRadius={20} />}
+                  {selectedCategory === cat && <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />}
                   <Text style={[styles.catText, { color: selectedCategory === cat ? "#FFF" : colors.textSecondary }]}>{cat}</Text>
                 </TouchableOpacity>
               ))}

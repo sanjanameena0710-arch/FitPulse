@@ -313,7 +313,7 @@ export default function ProfileScreen() {
                 <Ionicons name="videocam" size={20} color="#FF6B35" />
               </View>
               <Text style={[styles.quickToolName, { color: colors.text }]}>Rep Counter</Text>
-              <Text style={[styles.quickToolDesc, { color: colors.textMuted }]}>AI camera</Text>
+              <Text style={[styles.quickToolDesc, { color: colors.textMuted }]}>Live camera</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickTool, { backgroundColor: colors.card, borderColor: colors.border }]}

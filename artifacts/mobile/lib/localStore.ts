@@ -290,6 +290,16 @@ export const LocalStore = {
     await setJSON(K.USERS, users);
   },
 
+  async resetPassword(email: string, newPassword: string) {
+    const users = await getJSON<StoredUser[]>(K.USERS, []);
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = users.find(u => u.email === normalizedEmail);
+    if (!user) throw new Error("No account found with this email");
+    if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
+    user.password = newPassword;
+    await setJSON(K.USERS, users);
+  },
+
   async getExercises() {
     return SEED_EXERCISES;
   },
