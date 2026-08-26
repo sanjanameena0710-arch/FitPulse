@@ -19,6 +19,8 @@ import { apiRequest, ApiError } from "@/lib/api";
 
 type Exercise = { name: string; sets: number; reps: number; weight: number; done: boolean };
 
+const AUTO_WORKOUT_DURATION_SECONDS = 20 * 60;
+
 const DEFAULT_EXERCISES: Exercise[] = [
   { name: "Push-ups", sets: 3, reps: 12, weight: 0, done: false },
   { name: "Squats", sets: 3, reps: 15, weight: 0, done: false },
@@ -77,6 +79,13 @@ export default function ActiveWorkoutScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const secondsPerExercise = exercises.length > 0
+    ? AUTO_WORKOUT_DURATION_SECONDS / exercises.length
+    : AUTO_WORKOUT_DURATION_SECONDS;
+  const automaticDoneCount = Math.min(
+    exercises.length,
+    Math.floor(seconds / secondsPerExercise),
+  );
 
   useEffect(() => {
     if (isRunning) {
@@ -91,7 +100,25 @@ export default function ActiveWorkoutScreen() {
     setIsRunning(prev => !prev);
   }
 
+  useEffect(() => {
+    if (automaticDoneCount <= 0) return;
+    setExercises(prev => {
+      let changed = false;
+      const next = prev.map((ex, index) => {
+        if (index < automaticDoneCount && !ex.done) {
+          changed = true;
+          return { ...ex, done: true };
+        }
+        return ex;
+      });
+      return changed ? next : prev;
+    });
+  }, [automaticDoneCount]);
+
   function toggleExercise(idx: number) {
+    // Exercises completed by the timer stay completed. Manual tapping remains
+    // available for exercises that have not reached their scheduled interval.
+    if (idx < automaticDoneCount) return;
     setExercises(prev => prev.map((ex, i) => i === idx ? { ...ex, done: !ex.done } : ex));
   }
 
@@ -121,7 +148,13 @@ export default function ActiveWorkoutScreen() {
     setExercises(prev => prev.filter((_, i) => i !== idx));
   }
 
-  const completedCount = exercises.filter(e => e.done).length;
+  function resetWorkout() {
+    setSeconds(0);
+    setIsRunning(false);
+    setExercises(prev => prev.map(ex => ({ ...ex, done: false })));
+  }
+
+  const completedCount = exercises.filter(e => e.done || exercises.indexOf(e) < automaticDoneCount).length;
   const progress = exercises.length > 0 ? completedCount / exercises.length : 0;
   const estimatedCalories = Math.round((seconds / 60) * 8);
 
@@ -141,7 +174,13 @@ export default function ActiveWorkoutScreen() {
         category,
         duration: Math.max(1, Math.ceil(seconds / 60)),
         caloriesBurned: estimatedCalories,
-        exercises: exercises.map(e => ({ exerciseName: e.name, sets: e.sets, reps: e.reps, weight: e.weight, completed: e.done })),
+        exercises: exercises.map((e, index) => ({
+          exerciseName: e.name,
+          sets: e.sets,
+          reps: e.reps,
+          weight: e.weight,
+          completed: e.done || index < automaticDoneCount,
+        })),
         completedAt,
       };
       try {
@@ -225,7 +264,7 @@ export default function ActiveWorkoutScreen() {
 
           <TouchableOpacity
             style={styles.resetBtn}
-            onPress={() => { setSeconds(0); setIsRunning(false); }}
+            onPress={resetWorkout}
           >
             <Ionicons name="refresh" size={22} color="rgba(255,255,255,0.5)" />
           </TouchableOpacity>
@@ -262,19 +301,19 @@ export default function ActiveWorkoutScreen() {
         {exercises.map((ex, i) => (
           <Animated.View key={i} entering={FadeInDown.delay(i * 60).springify()}>
             <TouchableOpacity
-              style={[styles.exerciseRow, ex.done && styles.exerciseRowDone]}
+              style={[styles.exerciseRow, (ex.done || i < automaticDoneCount) && styles.exerciseRowDone]}
               onPress={() => toggleExercise(i)}
               onLongPress={() => removeExercise(i)}
               activeOpacity={0.8}
             >
-              <View style={[styles.exCheck, ex.done && styles.exCheckDone]}>
-                {ex.done && <Ionicons name="checkmark" size={14} color="#FFF" />}
+              <View style={[styles.exCheck, (ex.done || i < automaticDoneCount) && styles.exCheckDone]}>
+                {(ex.done || i < automaticDoneCount) && <Ionicons name="checkmark" size={14} color="#FFF" />}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.exName, ex.done && styles.exNameDone]}>{ex.name}</Text>
+                <Text style={[styles.exName, (ex.done || i < automaticDoneCount) && styles.exNameDone]}>{ex.name}</Text>
                 <Text style={styles.exMeta}>{ex.sets} sets × {ex.reps} reps{ex.weight > 0 ? ` · ${ex.weight}kg` : ""}</Text>
               </View>
-              <MaterialCommunityIcons name="weight-lifter" size={18} color={ex.done ? "#22C55E" : "rgba(255,255,255,0.3)"} />
+              <MaterialCommunityIcons name="weight-lifter" size={18} color={ex.done || i < automaticDoneCount ? "#22C55E" : "rgba(255,255,255,0.3)"} />
             </TouchableOpacity>
           </Animated.View>
         ))}

@@ -134,8 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function changeEmail(newEmail: string, password: string) {
     if (!user) throw new Error("Not logged in");
-    const updated = await LocalStore.changeEmail(user.id, newEmail, password);
-    setUser(toUser(updated));
+    try {
+      const updated = await apiRequest<Partial<User> & { email: string }>("/users/change-email", {
+        method: "PUT",
+        body: JSON.stringify({ newEmail: newEmail.trim().toLowerCase(), password }),
+      });
+      const nextUser = { ...user, ...updated };
+      await AsyncStorage.setItem("fitpulse_remote_user", JSON.stringify(nextUser));
+      setUser(nextUser);
+    } catch (error) {
+      if (!(error instanceof ApiError) || !error.offline) throw error;
+      const updated = await LocalStore.changeEmail(user.id, newEmail, password);
+      setUser(toUser(updated));
+    }
   }
 
   async function changePassword(currentPassword: string, newPassword: string) {

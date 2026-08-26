@@ -2,6 +2,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TOKEN_KEY = "fitpulse_api_token";
 
+declare global {
+  interface Window {
+    __FITPULSE_CONFIG__?: {
+      apiUrl?: string;
+    };
+  }
+}
+
 export class ApiError extends Error {
   status: number;
   offline: boolean;
@@ -15,8 +23,14 @@ export class ApiError extends Error {
 }
 
 function baseUrl() {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}/api` : "/api";
+  const runtimeApiUrl = typeof window !== "undefined" ? window.__FITPULSE_CONFIG__?.apiUrl?.trim() : "";
+  if (runtimeApiUrl) return runtimeApiUrl.replace(/\/+$/, "");
+
+  const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (configuredApiUrl) return configuredApiUrl.replace(/\/+$/, "");
+
+  const domain = process.env.EXPO_PUBLIC_DOMAIN?.trim();
+  return domain ? `https://${domain.replace(/^https?:\/\//, "")}/api` : "/api";
 }
 
 export async function getApiToken() {

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { workoutsTable, goalsTable, achievementsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -48,6 +48,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    const userId = req.authUserId;
     const { workoutName, category, duration, caloriesBurned, exercises, notes, completedAt } = req.body;
     if (!userId || !workoutName || !duration || caloriesBurned === undefined) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -68,7 +69,9 @@ router.post("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const [workout] = await db.select().from(workoutsTable).where(eq(workoutsTable.id, id)).limit(1);
+    const [workout] = await db.select().from(workoutsTable)
+      .where(and(eq(workoutsTable.id, id), eq(workoutsTable.userId, req.authUserId!)))
+      .limit(1);
     if (!workout) return res.status(404).json({ error: "Workout not found" });
     return res.json({ ...workout, exercises: workout.exercises || [] });
   } catch (err) {
@@ -85,7 +88,11 @@ router.put("/:id", async (req, res) => {
     if (duration !== undefined) updates.duration = duration;
     if (caloriesBurned !== undefined) updates.caloriesBurned = caloriesBurned;
     if (notes !== undefined) updates.notes = notes;
-    const [workout] = await db.update(workoutsTable).set(updates).where(eq(workoutsTable.id, id)).returning();
+    const [workout] = await db.update(workoutsTable)
+      .set(updates)
+      .where(and(eq(workoutsTable.id, id), eq(workoutsTable.userId, req.authUserId!)))
+      .returning();
+    if (!workout) return res.status(404).json({ error: "Workout not found" });
     return res.json({ ...workout, exercises: workout.exercises || [] });
   } catch (err) {
     return res.status(500).json({ error: "Internal server error" });
@@ -95,7 +102,10 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    await db.delete(workoutsTable).where(eq(workoutsTable.id, id));
+    const deleted = await db.delete(workoutsTable)
+      .where(and(eq(workoutsTable.id, id), eq(workoutsTable.userId, req.authUserId!)))
+      .returning({ id: workoutsTable.id });
+    if (deleted.length === 0) return res.status(404).json({ error: "Workout not found" });
     return res.json({ message: "Workout deleted successfully" });
   } catch (err) {
     return res.status(500).json({ error: "Internal server error" });
