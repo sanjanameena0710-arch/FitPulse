@@ -15,6 +15,11 @@ CORS_ORIGIN=https://your-frontend-domain.example
 TOKEN_SECRET=long random secret
 ```
 
+For a long-term free database, create a small Neon PostgreSQL project and put its
+connection string in `DATABASE_URL`. Render's free Postgres is suitable for testing,
+but its current free database limit is time-limited. The Render backend itself remains
+the deployed API service.
+
 The Render service runs the database schema push before the API build. After deployment,
 verify:
 
@@ -48,9 +53,10 @@ window.__FITPULSE_CONFIG__ = {
 };
 ```
 
-4. Upload the extracted folder to Netlify, Vercel static hosting, GitHub Pages, or another static host.
-5. Use HTTPS. Camera access and MediaPipe pose detection require a secure context.
-6. Put the exact frontend origin in Render's `CORS_ORIGIN` value and redeploy the backend.
+4. Upload the extracted folder to Netlify.
+5. Keep `_redirects` in the upload; it prevents `/login` and other client-side routes from returning 404 on refresh.
+6. Use HTTPS. Camera access and MediaPipe pose detection require a secure context.
+7. Put the exact frontend origin in Render's `CORS_ORIGIN` value and redeploy the backend.
 
 ## 3. Build the online WebView APK
 

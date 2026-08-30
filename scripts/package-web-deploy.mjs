@@ -25,6 +25,10 @@ if (!index.includes('./config.js')) {
   fs.writeFileSync(indexPath, index.replace("</head>", "  <script src=\"./config.js\"></script>\n</head>"));
 }
 
+// Expo Router is a client-side SPA on static hosting. Netlify must send
+// deep links back to the app shell instead of returning a 404 on refresh.
+fs.writeFileSync(path.join(output, "_redirects"), "/* /index.html 200\n");
+
 fs.writeFileSync(
   path.join(output, "DEPLOY-INSTRUCTIONS.txt"),
   `FITPULSE FRONTEND WEB DEPLOY\n\n1. Edit config.js and set apiUrl to your Render backend URL ending in /api.\n2. Upload the contents of this folder to Netlify, Vercel, GitHub Pages, or another static host.\n3. Keep HTTPS enabled because the camera and MediaPipe pose tracker require a secure context.\n4. Put the exact frontend URL into the backend CORS_ORIGIN environment variable.\n\nConfigured API URL at package time: ${apiUrl}\n`,

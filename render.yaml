@@ -1,3 +1,5 @@
+# The API runs on Render. Set DATABASE_URL to a PostgreSQL provider connection
+# (Neon is recommended for a long-term free database).
 services:
   - type: web
     name: fitpulse-api

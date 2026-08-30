@@ -4,7 +4,7 @@
 
 1. **Active Workout tasks needed manual taps**
    - Cause: exercise `done` was changed only by `onPress`.
-   - Fix: 20-minute timer schedule marks tasks complete sequentially based on exercise count.
+   - Fix: selected workout duration schedule marks tasks complete sequentially based on exercise count.
 
 2. **Push-up camera had no real pose overlay**
    - Cause: camera screen only rendered a video and manual `+` button.
@@ -31,3 +31,12 @@
 
 9. **Deploy package copied stale TypeScript build cache**
    - Fix: clean package staging excludes `*.tsbuildinfo` and clean extraction/build was verified.
+
+10. **Static frontend deep links could 404 on refresh**
+    - Fix: Netlify `_redirects` now routes all client paths to `index.html`.
+
+11. **Active Workout timing was fixed and could not match a user's session**
+    - Fix: duration selector supports 10, 20, 30, or custom 1–240 minutes before the timer starts.
+
+12. **Progress photos were not intended for server storage**
+    - Fix: no photo API/table was added; photo UI remains device-local.
