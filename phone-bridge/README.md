@@ -17,6 +17,20 @@ main aapke phone ka live terminal nahi dekh sakta, bas job daal sakta hoon aur o
 
 ---
 
+## 0. ⚠️ SABSE PEHLE — repo private karo (mandatory)
+
+`sanjanameena0710-arch/FitPulse` abhi **PUBLIC** hai. Iska matlab: duniya ka koi bhi banda
+`phone-bridge/inbox/` me ek .sh file commit kar sakta hai — aur aapka agent use phone pe chala dega.
+(confirm-mode default ON hai isliye aapko dikh jayega, par ye safe nahi hai.)
+
+**Fix (30 second):** github.com → FitPulse → Settings → *Danger Zone* → **Change repository visibility → Private**.
+(Repo private karne ke baad clone token ke saath hoga — niche wala setup already wahi karta hai.)
+
+Ya aur clean option: ek **naya private repo** bana lo `fitpulse-phone-bridge`, usme sirf `phone-bridge/`
+folder daal do, aur agent ko `BRANCH_CODE`/`FP_REPO_URL` se wahi repo point karao.
+
+---
+
 ## 1. Termux side — setup (5 minute)
 
 ### a) Packages + apps
@@ -35,12 +49,20 @@ github.com → Settings → Developer settings → **Fine-grained tokens** → G
 Token ka ek line note kar lo (`github_pat_...`). Repo **private** hona chahiye.
 
 ### c) Installer
-Repo ko `~/phone-bridge/bridge` me clone karke config bana dega:
+Repo ko clone karke config bana dega (private repo hai to token URL me chahiye):
 ```bash
 cd ~
-git clone --branch arena/01a05293-fitpulse https://github.com/sanjanameena0710-arch/FitPulse.git phone-bridge-clone
+git clone --branch arena/01a05293-fitpulse \
+  "https://oauth2:github_pat_YOUR_TOKEN@github.com/sanjanameena0710-arch/FitPulse.git" phone-bridge-clone
 FP_TOKEN=github_pat_YOUR_TOKEN bash phone-bridge-clone/phone-bridge/setup-termux.sh
 ```
+Setup ke baad clone hata do (uske `.git/config` me token copy hai):
+```bash
+rm -rf ~/phone-bridge-clone
+```
+> Note: `~/phone-bridge/{code,out}/.git/config` me bhi token URL ke saath save hota hai (Termux me
+> credential helper setup karna overkill hai). Isliye token ka scope minimal rakho —
+> sirf **FitPulse repo + Contents: read/write**. Shakk ho to token turant revoke karke naya bana lo.
 
 ### d) Agent chalu
 ```bash
@@ -146,3 +168,26 @@ phone-bridge/
 ├── outbox/               # (phone se aaye results — sirf phone-outbox branch me)
 └── tools/fp.sh           # sandbox-side CLI: new / list / results / watch
 ```
+
+---
+
+## 6. Verify kya ho chuka hai
+
+Poora loop ek local bare-repo simulation me test kiya gaya (fake `termux-*` binaries ke saath):
+
+| Scenario | Result |
+|---|---|
+| Pehla run: code+out clone, `phone-outbox` branch auto-create, push | ✅ |
+| `ro__hello-phone` probe (getprop/battery/wifi/sensor) → result `outbox/*.md` me | ✅ |
+| `rm -rf /` + `curl \| sh` wala job | ✅ BLOCKED (dangerous-pattern) |
+| `ro__` job me `curl` (allowlist me nahi) | ✅ BLOCKED (allowlist) |
+| `@needs: termux-battery-status` aur command missing | ✅ SKIPPED + fix-message wapas |
+| Output me `github_pat_...` / `password=...` | ✅ auto-REDACTED |
+| Doosra cycle: same job dobara nahi chala (done.list) | ✅ |
+| `touch ~/phone-bridge/.stop` | ✅ agle cycle pe exit |
+| Confirm mode bina tty ke | ✅ REFUSE (result me reason) |
+| Battery 87% parse, <10% pe skip | ✅ |
+
+Ab asli phone pe chalane ke liye bas upar wale 3 step chahiye — uske baad mujhe bolo
+"phone pe step count check kar" aur main job daal dunga.
+
