@@ -42,11 +42,25 @@ export async function setApiToken(token: string | null) {
   else await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
+const API_REQUEST_TIMEOUT_MS = 12_000;
+
+function isUnconfiguredApiUrl(url: string) {
+  return url === "/api" || url.includes("your-backend.onrender.com") || url.includes("YOUR-BACKEND");
+}
+
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getApiToken();
+  const url = baseUrl();
+  if (isUnconfiguredApiUrl(url)) {
+    throw new ApiError("FitPulse backend is not configured. Using local mode.", 0, true);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${baseUrl()}${path}`, {
+    const response = await fetch(`${url}${path}`, {
       ...options,
+      signal: options.signal || controller.signal,
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -60,6 +74,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     return body as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    throw new ApiError("FitPulse server is unavailable. Using offline mode.", 0, true);
+    throw new ApiError("FitPulse server is unavailable. Using local mode.", 0, true);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

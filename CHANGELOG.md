@@ -15,3 +15,5 @@
 - Fixed remote change-email persistence.
 - Fixed API workout save route and user ownership checks.
 - Fixed generated Zod barrel duplicate export.
+- Fixed Netlify registration getting stuck when the backend URL is still a placeholder.
+- Added API timeout and safe local fallback while backend deployment is pending.

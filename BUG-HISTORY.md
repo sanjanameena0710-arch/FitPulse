@@ -40,3 +40,7 @@
 
 12. **Progress photos were not intended for server storage**
     - Fix: no photo API/table was added; photo UI remains device-local.
+
+13. **Netlify Start Training button did not advance when the backend placeholder URL was used**
+    - Cause: the frontend tried to call `your-backend.onrender.com`; API errors stopped registration before navigation.
+    - Fix: unconfigured backend detection, local fallback, and a 12-second API timeout were added. A real configured backend is still used when its URL is set.
