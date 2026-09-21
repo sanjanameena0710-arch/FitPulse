@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "FitPulse",
+    "slug": "fitpulse-webview",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "fitpulse",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.fitpulse.webview",
+      "versionCode": 1,
+      "permissions": ["INTERNET", "CAMERA"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.fitpulse.webview",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FitPulse uses the camera for real-time push-up detection."
+      }
+    }
+  }
+}

@@ -7,9 +7,9 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    const userId = parseInt(req.query.userId as string);
-    const days = parseInt(req.query.days as string) || 30;
-    if (!userId) return res.status(400).json({ error: "userId required" });
+    const userId = req.authUserId;
+    const days = Math.min(Math.max(parseInt(req.query.days as string) || 30, 1), 365);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
@@ -27,7 +27,8 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { userId, date, workoutsCompleted, caloriesBurned, minutesActive, weight, steps, mood } = req.body;
+    const userId = req.authUserId;
+    const { date, workoutsCompleted, caloriesBurned, minutesActive, weight, steps, mood } = req.body;
     if (!userId || !date || workoutsCompleted === undefined) {
       return res.status(400).json({ error: "Missing required fields" });
     }
@@ -42,8 +43,8 @@ router.post("/", async (req, res) => {
 
 router.get("/summary", async (req, res) => {
   try {
-    const userId = parseInt(req.query.userId as string);
-    if (!userId) return res.status(400).json({ error: "userId required" });
+    const userId = req.authUserId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const workouts = await db.select().from(workoutsTable)
       .where(eq(workoutsTable.userId, userId))

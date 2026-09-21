@@ -295,16 +295,6 @@ export default function HomeScreen() {
         </Animated.View>
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/workout/active")}
-        activeOpacity={0.85}
-      >
-        <LinearGradient colors={["#6C63FF", "#9C8FFF"]} style={styles.fabGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <Ionicons name="play" size={26} color="#FFF" />
-        </LinearGradient>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -366,6 +356,4 @@ const styles = StyleSheet.create({
   workoutName: { fontSize: 15, fontWeight: "600" },
   workoutMeta: { fontSize: 12, fontWeight: "400", marginTop: 2 },
   workoutDate: { fontSize: 12, fontWeight: "400" },
-  fab: { position: "absolute", bottom: 100, right: 20, shadowColor: "#6C63FF", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 10 },
-  fabGrad: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
 });

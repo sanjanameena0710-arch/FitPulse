@@ -19,6 +19,8 @@ import { apiRequest, ApiError } from "@/lib/api";
 
 type Exercise = { name: string; sets: number; reps: number; weight: number; done: boolean };
 
+const AUTO_WORKOUT_DURATION_SECONDS = 20 * 60;
+
 const DEFAULT_EXERCISES: Exercise[] = [
   { name: "Push-ups", sets: 3, reps: 12, weight: 0, done: false },
   { name: "Squats", sets: 3, reps: 15, weight: 0, done: false },
@@ -65,18 +67,30 @@ export default function ActiveWorkoutScreen() {
   const colors = Colors[scheme === "dark" ? "dark" : "light"];
   const { user } = useAuth();
 
-  const params = useLocalSearchParams<{ name?: string; category?: string; exercises?: string }>();
+  const params = useLocalSearchParams<{ name?: string; category?: string; exercises?: string; duration?: string }>();
   const initialExercises: Exercise[] = params.exercises
     ? params.exercises.split(",").map(n => ({ name: n, sets: 3, reps: 12, weight: 0, done: false }))
     : DEFAULT_EXERCISES;
+  const initialDuration = params.duration ? Number(params.duration) : null;
   const [workoutName, setWorkoutName] = useState(params.name || "Morning Workout");
   const [category] = useState(params.category || "strength");
-  const [isRunning, setIsRunning] = useState(true);
+  const [autoDurationMinutes, setAutoDurationMinutes] = useState<number | null>(
+    initialDuration && Number.isFinite(initialDuration) && initialDuration > 0 ? initialDuration : null,
+  );
+  const [durationInput, setDurationInput] = useState("20");
+  const [isRunning, setIsRunning] = useState(autoDurationMinutes !== null);
   const [seconds, setSeconds] = useState(0);
   const [exercises, setExercises] = useState<Exercise[]>(initialExercises);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const secondsPerExercise = autoDurationMinutes && exercises.length > 0
+    ? (autoDurationMinutes * 60) / exercises.length
+    : AUTO_WORKOUT_DURATION_SECONDS / Math.max(exercises.length, 1);
+  const automaticDoneCount = Math.min(
+    exercises.length,
+    Math.floor(seconds / secondsPerExercise),
+  );
 
   useEffect(() => {
     if (isRunning) {
@@ -87,11 +101,38 @@ export default function ActiveWorkoutScreen() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRunning]);
 
+  function chooseDuration(minutes: number) {
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > 240) return;
+    const normalized = Math.round(minutes * 10) / 10;
+    setAutoDurationMinutes(normalized);
+    setDurationInput(String(normalized));
+    setIsRunning(true);
+  }
+
   function toggleTimer() {
+    if (!autoDurationMinutes) return;
     setIsRunning(prev => !prev);
   }
 
+  useEffect(() => {
+    if (automaticDoneCount <= 0) return;
+    setExercises(prev => {
+      let changed = false;
+      const next = prev.map((ex, index) => {
+        if (index < automaticDoneCount && !ex.done) {
+          changed = true;
+          return { ...ex, done: true };
+        }
+        return ex;
+      });
+      return changed ? next : prev;
+    });
+  }, [automaticDoneCount]);
+
   function toggleExercise(idx: number) {
+    // Exercises completed by the timer stay completed. Manual tapping remains
+    // available for exercises that have not reached their scheduled interval.
+    if (idx < automaticDoneCount) return;
     setExercises(prev => prev.map((ex, i) => i === idx ? { ...ex, done: !ex.done } : ex));
   }
 
@@ -121,7 +162,13 @@ export default function ActiveWorkoutScreen() {
     setExercises(prev => prev.filter((_, i) => i !== idx));
   }
 
-  const completedCount = exercises.filter(e => e.done).length;
+  function resetWorkout() {
+    setSeconds(0);
+    setIsRunning(false);
+    setExercises(prev => prev.map(ex => ({ ...ex, done: false })));
+  }
+
+  const completedCount = exercises.filter((e, index) => e.done || index < automaticDoneCount).length;
   const progress = exercises.length > 0 ? completedCount / exercises.length : 0;
   const estimatedCalories = Math.round((seconds / 60) * 8);
 
@@ -141,7 +188,13 @@ export default function ActiveWorkoutScreen() {
         category,
         duration: Math.max(1, Math.ceil(seconds / 60)),
         caloriesBurned: estimatedCalories,
-        exercises: exercises.map(e => ({ exerciseName: e.name, sets: e.sets, reps: e.reps, weight: e.weight, completed: e.done })),
+        exercises: exercises.map((e, index) => ({
+          exerciseName: e.name,
+          sets: e.sets,
+          reps: e.reps,
+          weight: e.weight,
+          completed: e.done || index < automaticDoneCount,
+        })),
         completedAt,
       };
       try {
@@ -156,7 +209,7 @@ export default function ActiveWorkoutScreen() {
         params: {
           duration: String(Math.max(1, Math.ceil(seconds / 60))),
           calories: String(estimatedCalories),
-          exercises: String(exercises.filter(e => e.done).length),
+          exercises: String(completedCount),
         },
       });
     } catch (err: any) {
@@ -225,7 +278,7 @@ export default function ActiveWorkoutScreen() {
 
           <TouchableOpacity
             style={styles.resetBtn}
-            onPress={() => { setSeconds(0); setIsRunning(false); }}
+            onPress={resetWorkout}
           >
             <Ionicons name="refresh" size={22} color="rgba(255,255,255,0.5)" />
           </TouchableOpacity>
@@ -262,19 +315,19 @@ export default function ActiveWorkoutScreen() {
         {exercises.map((ex, i) => (
           <Animated.View key={i} entering={FadeInDown.delay(i * 60).springify()}>
             <TouchableOpacity
-              style={[styles.exerciseRow, ex.done && styles.exerciseRowDone]}
+              style={[styles.exerciseRow, (ex.done || i < automaticDoneCount) && styles.exerciseRowDone]}
               onPress={() => toggleExercise(i)}
               onLongPress={() => removeExercise(i)}
               activeOpacity={0.8}
             >
-              <View style={[styles.exCheck, ex.done && styles.exCheckDone]}>
-                {ex.done && <Ionicons name="checkmark" size={14} color="#FFF" />}
+              <View style={[styles.exCheck, (ex.done || i < automaticDoneCount) && styles.exCheckDone]}>
+                {(ex.done || i < automaticDoneCount) && <Ionicons name="checkmark" size={14} color="#FFF" />}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.exName, ex.done && styles.exNameDone]}>{ex.name}</Text>
+                <Text style={[styles.exName, (ex.done || i < automaticDoneCount) && styles.exNameDone]}>{ex.name}</Text>
                 <Text style={styles.exMeta}>{ex.sets} sets × {ex.reps} reps{ex.weight > 0 ? ` · ${ex.weight}kg` : ""}</Text>
               </View>
-              <MaterialCommunityIcons name="weight-lifter" size={18} color={ex.done ? "#22C55E" : "rgba(255,255,255,0.3)"} />
+              <MaterialCommunityIcons name="weight-lifter" size={18} color={ex.done || i < automaticDoneCount ? "#22C55E" : "rgba(255,255,255,0.3)"} />
             </TouchableOpacity>
           </Animated.View>
         ))}
@@ -284,6 +337,39 @@ export default function ActiveWorkoutScreen() {
           <Text style={styles.addExText}>Add Exercise</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal visible={!autoDurationMinutes} transparent animationType="fade" onRequestClose={() => router.back()}>
+        <View style={styles.durationBackdrop}>
+          <View style={styles.durationCard}>
+            <Text style={styles.durationTitle}>Choose Workout Duration</Text>
+            <Text style={styles.durationSub}>Tasks will complete equally as the timer runs.</Text>
+            <View style={styles.durationOptions}>
+              {[10, 20, 30].map(minutes => (
+                <TouchableOpacity key={minutes} style={styles.durationOption} onPress={() => chooseDuration(minutes)}>
+                  <Text style={styles.durationOptionText}>{minutes} min</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.durationInput}
+              value={durationInput}
+              onChangeText={setDurationInput}
+              keyboardType="decimal-pad"
+              placeholder="Custom minutes"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+            />
+            <TouchableOpacity
+              style={styles.durationCustomButton}
+              onPress={() => chooseDuration(Number(durationInput))}
+            >
+              <Text style={styles.durationCustomText}>Use Custom Duration</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.durationCancel}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
         <View style={styles.modalBackdrop}>
@@ -362,6 +448,17 @@ const styles = StyleSheet.create({
   exMeta: { fontSize: 12, fontWeight: "400", color: "rgba(255,255,255,0.4)", marginTop: 2 },
   addExBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 14, borderWidth: 1, borderColor: "rgba(108,99,255,0.3)", borderStyle: "dashed" },
   addExText: { fontSize: 14, fontWeight: "500", color: "rgba(108,99,255,0.8)" },
+  durationBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.78)", alignItems: "center", justifyContent: "center", padding: 24 },
+  durationCard: { width: "100%", maxWidth: 360, backgroundColor: "#17152D", borderRadius: 24, padding: 24, alignItems: "center" },
+  durationTitle: { color: "#FFF", fontSize: 20, fontWeight: "700", textAlign: "center" },
+  durationSub: { color: "rgba(255,255,255,0.6)", fontSize: 13, textAlign: "center", marginTop: 8, marginBottom: 20 },
+  durationOptions: { flexDirection: "row", gap: 8, width: "100%" },
+  durationOption: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: "rgba(108,99,255,0.18)", borderWidth: 1, borderColor: "rgba(108,99,255,0.45)", alignItems: "center" },
+  durationOptionText: { color: "#9C8FFF", fontSize: 14, fontWeight: "700" },
+  durationInput: { width: "100%", color: "#FFF", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: "center", marginTop: 14 },
+  durationCustomButton: { width: "100%", borderRadius: 12, backgroundColor: "#6C63FF", paddingVertical: 13, alignItems: "center", marginTop: 10 },
+  durationCustomText: { color: "#FFF", fontSize: 14, fontWeight: "700" },
+  durationCancel: { color: "rgba(255,255,255,0.55)", fontSize: 14, padding: 14 },
   modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.65)" },
   pickerCard: { maxHeight: "82%", backgroundColor: "#17152D", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 },
   pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },

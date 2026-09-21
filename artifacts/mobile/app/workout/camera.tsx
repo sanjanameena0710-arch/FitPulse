@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, Platform, Alert,
   Modal, ScrollView,
@@ -14,6 +14,7 @@ import { CameraView, useCameraPermissions, CameraType } from "expo-camera";
 import { useAuth } from "@/context/AuthContext";
 import { LocalStore } from "@/lib/localStore";
 import { apiRequest, ApiError } from "@/lib/api";
+import WebPoseCamera from "@/components/WebPoseCamera";
 
 const EXERCISE_OPTIONS = [
   { name: "Push-ups", calPerRep: 0.5, target: 15, color: "#6C63FF" },
@@ -34,62 +35,6 @@ function PulseDot({ active }: { active: boolean }) {
   return <Animated.View style={[styles.recordDot, style]} />;
 }
 
-function WebCameraPreview({ facing }: { facing: CameraType }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let stream: MediaStream | null = null;
-    let cancelled = false;
-    async function openCamera() {
-      try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error("Camera is not supported in this browser.");
-        }
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing === "front" ? "user" : { exact: "environment" } },
-          audio: false,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach(track => track.stop());
-          return;
-        }
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-      } catch (err: any) {
-        setError(err?.message || "Camera permission was denied.");
-      }
-    }
-    openCamera();
-    return () => {
-      cancelled = true;
-      stream?.getTracks().forEach(track => track.stop());
-    };
-  }, [facing]);
-
-  if (error) {
-    return (
-      <View style={styles.webPlaceholder}>
-        <MaterialCommunityIcons name="camera-off" size={56} color="rgba(255,255,255,0.45)" />
-        <Text style={styles.webPlaceholderText}>{error}</Text>
-        <Text style={styles.webPlaceholderSub}>Allow camera access and use HTTPS to enable the live preview.</Text>
-      </View>
-    );
-  }
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      muted
-      playsInline
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-    />
-  );
-}
-
 export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -101,6 +46,7 @@ export default function CameraScreen() {
   const [seconds, setSeconds] = useState(0);
   const [tracking, setTracking] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [formStatus, setFormStatus] = useState<"GOOD" | "ADJUST">("ADJUST");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -118,6 +64,14 @@ export default function CameraScreen() {
     setTracking(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
   }
+
+  const handleAutoRep = useCallback(() => {
+    setReps(r => r + 1);
+  }, []);
+
+  const handleFormChange = useCallback((status: "GOOD" | "ADJUST") => {
+    setFormStatus(status);
+  }, []);
 
   function manualAddRep() {
     setReps(r => r + 1);
@@ -164,7 +118,18 @@ export default function CameraScreen() {
         exercises: [{ exerciseName: exercise.name, sets: 1, reps, weight: 0 }],
         completedAt: new Date().toISOString(),
       };
+      const cameraSessionPayload = {
+        exercise: exercise.name,
+        reps,
+        duration: seconds,
+        formStatus,
+        completedAt: workoutPayload.completedAt,
+      };
       try {
+        await apiRequest("/camera-sessions", {
+          method: "POST",
+          body: JSON.stringify(cameraSessionPayload),
+        });
         await apiRequest("/workouts", { method: "POST", body: JSON.stringify(workoutPayload) });
       } catch (error) {
         if (!(error instanceof ApiError) || !error.offline) throw error;
@@ -219,10 +184,16 @@ export default function CameraScreen() {
     <View style={[styles.container, { backgroundColor: "#000" }]}>
       {Platform.OS !== "web" ? (
         <CameraView style={StyleSheet.absoluteFill} facing={facing} />
-       ) : (
-        <View style={StyleSheet.absoluteFill}>
-          <WebCameraPreview facing={facing} />
-        </View>
+      ) : (
+        <WebPoseCamera
+          facing={facing}
+          tracking={tracking}
+          reps={reps}
+          exerciseName={exercise.name}
+          accentColor={exercise.color}
+          onRep={handleAutoRep}
+          onFormChange={handleFormChange}
+        />
       )}
 
       {/* Dark overlay */}
@@ -260,7 +231,7 @@ export default function CameraScreen() {
         <View style={styles.detectionLabel}>
           <View style={[styles.detectionDot, { backgroundColor: tracking ? "#22C55E" : "#9B9BB5" }]} />
           <Text style={styles.detectionText}>
-            {tracking ? "Detecting motion…" : "Position yourself in frame"}
+            {tracking ? `Detecting motion… · FORM: ${formStatus}` : "Position yourself in frame"}
           </Text>
         </View>
       </View>

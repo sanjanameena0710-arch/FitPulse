@@ -1,2 +1,46 @@
 export * from "./generated/api";
-export * from "./generated/types";
+
+// The generated schema and type files both contain ForgotPasswordBody. Keep
+// the runtime Zod schema under its generated name and expose the TypeScript
+// shape with an explicit alias to avoid a duplicate barrel export.
+export {
+  type Achievement,
+  type AuthResponse,
+  type CreateGoalRequest,
+  type CreateWorkoutRequest,
+  type ErrorResponse,
+  type Exercise,
+  type ExerciseDifficulty,
+  type ForgotPasswordBody as ForgotPasswordBodyType,
+  type GetAchievementsParams,
+  type GetExercisesParams,
+  type GetGoalsParams,
+  type GetProgressParams,
+  type GetProgressSummaryParams,
+  type GetUserProfileParams,
+  type GetUserStatsParams,
+  type GetWorkoutPlansParams,
+  type GetWorkoutsParams,
+  type Goal,
+  type HealthStatus,
+  type LoginRequest,
+  type LogProgressRequest,
+  type MessageResponse,
+  type ProgressEntry,
+  type ProgressSummary,
+  type ProgressSummaryMonthlyWorkoutsItem,
+  type ProgressSummaryWeeklyCaloriesItem,
+  type RegisterRequest,
+  type RegisterRequestActivityLevel,
+  type RegisterRequestFitnessGoal,
+  type UpdateGoalRequest,
+  type UpdateProfileRequest,
+  type UpdateWorkoutRequest,
+  type User,
+  type UserProfile,
+  type UserStats,
+  type Workout,
+  type WorkoutExercise,
+  type WorkoutPlan,
+  type WorkoutPlanLevel,
+} from "./generated/types";
