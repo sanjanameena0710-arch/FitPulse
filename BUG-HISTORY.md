@@ -44,3 +44,9 @@
 13. **Netlify Start Training button did not advance when the backend placeholder URL was used**
     - Cause: the frontend tried to call `your-backend.onrender.com`; API errors stopped registration before navigation.
     - Fix: unconfigured backend detection, local fallback, and a 12-second API timeout were added. A real configured backend is still used when its URL is set.
+
+14. **Home screen floating play button was not wanted in the screenshot layout**
+    - Fix: removed the Home FAB; the Workout tab and Quick Start cards remain available.
+
+15. **Public API had no request throttling and weak legacy password/token protection**
+    - Fix: added Helmet, global/auth rate limits, scrypt password hashes, expiring signed tokens, input validation, production CORS enforcement, and security tests.

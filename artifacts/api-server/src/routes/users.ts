@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, workoutsTable, progressTable } from "@workspace/db";
 import { eq, desc, gte, sql } from "drizzle-orm";
-import { verifyPassword, hashPassword } from "../lib/auth.js";
+import { isStrongEnoughPassword, isValidEmail, normalizeEmail, verifyPassword, hashPassword } from "../lib/auth.js";
 
 const router = Router();
 
@@ -118,10 +118,11 @@ router.get("/stats", async (req, res) => {
 
 router.put("/change-email", async (req, res) => {
   try {
-    const { newEmail, password } = req.body;
+    const newEmail = normalizeEmail(req.body.newEmail);
+    const { password } = req.body;
     const userId = req.authUserId;
-    if (!userId || !newEmail || !password) {
-      return res.status(400).json({ error: "userId, newEmail and password required" });
+    if (!userId || !isValidEmail(newEmail) || typeof password !== "string") {
+      return res.status(400).json({ error: "A valid newEmail and password are required" });
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -144,8 +145,8 @@ router.put("/change-password", async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.authUserId;
-    if (!userId || !currentPassword || !newPassword) {
-      return res.status(400).json({ error: "userId, currentPassword and newPassword required" });
+    if (!userId || typeof currentPassword !== "string" || !isStrongEnoughPassword(newPassword)) {
+      return res.status(400).json({ error: "A valid currentPassword and newPassword are required" });
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) return res.status(404).json({ error: "User not found" });

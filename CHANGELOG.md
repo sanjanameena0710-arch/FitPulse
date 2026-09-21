@@ -17,3 +17,5 @@
 - Fixed generated Zod barrel duplicate export.
 - Fixed Netlify registration getting stuck when the backend URL is still a placeholder.
 - Added API timeout and safe local fallback while backend deployment is pending.
+- Removed the Home screen floating play button.
+- Added API security headers, authentication/API rate limits, stronger password hashing, token expiry, validation, and security tests.

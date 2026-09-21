@@ -1,17 +1,28 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
+import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { hashPassword, verifyPassword, generateToken } from "../lib/auth.js";
+import {
+  generateToken,
+  hashPassword,
+  isStrongEnoughPassword,
+  isValidEmail,
+  normalizeEmail,
+  verifyPassword,
+} from "../lib/auth.js";
 
 const router = Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, fitnessGoal, age, weight, height, activityLevel } = req.body;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    const email = normalizeEmail(req.body.email);
+    const { password, fitnessGoal, age, weight, height, activityLevel } = req.body;
 
-    if (!name || !email || !password || !fitnessGoal) {
-      return res.status(400).json({ error: "Missing required fields", message: "name, email, password, fitnessGoal are required" });
+    if (!name || name.length > 100 || !isValidEmail(email) || !isStrongEnoughPassword(password) || !fitnessGoal) {
+      return res.status(400).json({
+        error: "Invalid registration data",
+        message: "A valid name, email, fitness goal and password of 6-128 characters are required",
+      });
     }
 
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
@@ -21,7 +32,7 @@ router.post("/register", async (req, res) => {
 
     const passwordHash = hashPassword(password);
     const [user] = await db.insert(usersTable).values({
-      name, email, passwordHash, fitnessGoal, age, weight, height, activityLevel: activityLevel || "moderately_active"
+      name, email, passwordHash, fitnessGoal, age, weight, height, activityLevel: activityLevel || "moderately_active",
     }).returning();
 
     const token = generateToken(user.id);
@@ -32,7 +43,7 @@ router.post("/register", async (req, res) => {
         id: user.id, name: user.name, email: user.email,
         fitnessGoal: user.fitnessGoal, age: user.age, weight: user.weight, height: user.height,
         activityLevel: user.activityLevel, createdAt: user.createdAt,
-      }
+      },
     });
   } catch (err) {
     console.error("Register error:", err);
@@ -42,10 +53,11 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const { password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Missing fields", message: "Email and password required" });
+    if (!isValidEmail(email) || typeof password !== "string" || password.length > 128) {
+      return res.status(400).json({ error: "Invalid credentials", message: "Email or password is invalid" });
     }
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
@@ -60,7 +72,7 @@ router.post("/login", async (req, res) => {
         id: user.id, name: user.name, email: user.email,
         fitnessGoal: user.fitnessGoal, age: user.age, weight: user.weight, height: user.height,
         activityLevel: user.activityLevel, createdAt: user.createdAt,
-      }
+      },
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -69,8 +81,10 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/forgot-password", async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email required" });
+  // Keep the response generic to avoid revealing whether an email is registered.
+  if (!isValidEmail(normalizeEmail(req.body.email))) {
+    return res.status(400).json({ error: "Invalid email" });
+  }
   return res.json({ message: "If an account exists, a reset link has been sent." });
 });
 
